@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Golf Tour</title>
+    <script src="http://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+    
+    <!-- Local theme -->
+    <style>
+	    body        { background: #E8EFF0; margin: 0; padding: 0; }
+		body, input { font-family: 'Helvetica Neue', Arial,
+		              sans-serif; font-weight: 300; font-size: 18px; }
+		a           { color: #11557C; text-decoration: none; outline: 0; }
+		h1, h2      { margin: 0; color: #11557C; text-align: center}
+		h1 a        { text-decoration: none; }
+		h2          { font-weight: normal; font-size: 24px; }
+		.tagline    { color: #888; font-style: italic; margin: 0 0 20px 0; }
+		.box        { width: 960px; margin: 30px auto; padding: 20px;
+		              background: white; box-shadow: 0 1px 4px #BED1D4;
+		              border-radius: 2px; }
+		.smaller-box
+					{ width: 480px; margin: 15px auto; padding: 10px;}
+		.floating-box
+					{ width: 280px; margin: 15px auto; padding: 10px;
+					  float:left; box-shadow: 0 1px 4px #BED1D4;
+					  border-radius: 2px; height: 150px;}
+		.message    { padding: 3px 8px; color: #11557C;
+		              font-size: 0.9em; border-radius: 2px; }
+		.center		{ text-align: center; }
+		.left       { float: left; }
+		.right      { float: right; }
+		.top        { position: absolute; top: 0 }
+		.topright   { position: absolute; top: 0; right: 10px;}
+		.nomargin   { margin: 0px; }
+		.nopadding  { padding: 0px; }
+		.link div   { overflow: auto; font-size: 0.8em; white-space: pre;
+		              padding: 4px 10px; margin: 5px 0; background: #E5EAF1; }
+		table.center
+					{ margin-left: auto; margin-right: auto; }
+		table.nospace
+				    { border-spacing: 0px; border-collapse: separate; }
+		table.fixedwidth 
+					{ table-layout: fixed; width: 100%;}
+		td          { padding: 2px; text-align: center; font-size: smaller; }
+		.c1			{ width: 25%; text-align: left; }
+		.c2			{ width: 8%; }
+		.c8			{ width: 3%; }
+		.odd th     { background-color: #EEE; }
+		.odd td     { background-color: #EEE; }
+		.breakword  { word-wrap: break-word; }
+		form .text	{ margin: 10px auto; text-align: right; }
+		.text label { padding: 0 10px 0 0; }
+		.text input	{ width: 300px; vertical-align: middle; }
+		.text .button
+					{ width: 125px; }
+		.hidden     { display: none; }
+		.error      { background: #E8EFF0; padding: 3px 8px; color: #11557C;
+		              font-size: 0.9em; border-radius: 2px; }
+		.valid      { }
+	</style>
+	
+    <!-- Local javascript -->  
+    <script type=text/javascript>
+    	// isEmailAddress(email_address)
+    	// expect: email address
+    	// return: true or false
+    	function isEmailAddress(email_address='') {
+    		return /[^@]+@[^@]+\.[^@]+/.test(String(email_address));
+    	}
+    	// isOrderTotal(order_total)
+    	// expect: order total
+    	// return: true or false
+    	function isOrderTotal(order_total='') {
+    		return /^-?[0-9]+\.?[0-9]{0,2}$/.test(String(order_total));
+    	}
+    	
+    	// submitOrderCancel
+    	// expects: nothing
+    	// returns: nothing
+    	function submitOrderCancel() {
+    		// Enable button again - just in case
+    		if ($('input#submitOrder').prop('disabled')) {
+				$('input#submitOrder').prop('disabled', false);
+    		}
+    		// Clear order text
+    		$('input[name="emailAddressA"]').val('');
+    		$('input[name="orderTotalA"]').val('');
+    		// Undo email address readonly field
+			$('#emailAddressA').prop('readonly', false);
+    		// Hide submit order cancel button
+			$('input#submitOrderCancel').hide();
+    		// Put focus on email address search
+			$('#emailAddressS').focus();
+			return false;
+    	}
+    	// submitOrderClick
+    	// expects: email address and order total fields
+    	// returns: updates customer table on success
+    	function submitOrderClick() {
+			// Post processing cleanup
+    		// expects: error=true or false
+    		// returns: nothing
+			function cleanup(error=false) {
+	    		// Enable button again
+	    		if ($('input#submitOrder').prop('disabled')) {
+    				$('input#submitOrder').prop('disabled', false);
+	    		}
+	    		if (!error) {
+		    		// Clear order text
+		    		$('input[name="emailAddressA"]').val('');
+		    		$('input[name="orderTotalA"]').val('');
+		    		// Undo email address readonly field
+					$('#emailAddressA').prop('readonly', false);
+		    		// Hide submit order cancel button
+					$('input#submitOrderCancel').hide();
+		    		// Rebuild table
+   					search();
+   				} else {
+    				// Noify user of error
+    				alert("Submit Order encountererd an error!");
+   					$('input#submitOrder').focus();
+   				}
+	    		return false;
+			}
+			
+    		try {
+    			// Disable button to prevent double submit
+    			$('input#submitOrder').prop('disabled', true);
+    			// Get JSON object for order submission
+    			var email_address = $('input[name="emailAddressA"]').val();
+				if (!isEmailAddress(email_address)) {
+					alert("Not a vaild email address.");
+					$('#emailAddressA').focus();
+					$('input#submitOrder').prop('disabled', false);
+					return false;
+				}
+    			var order_total = $('input[name="orderTotalA"]').val();
+				if (!isOrderTotal(order_total)) {
+					alert("Not a vaild order total.");
+					$('#orderTotalA').focus();
+					$('input#submitOrder').prop('disabled', false);
+					return false;
+				}
+	    		var json_obj = {};
+	    		json_obj["emailAddress"] = email_address;
+	    		json_obj["orderTotal"] = order_total;
+				
+				// Ajax w/promises
+	    		$.ajax({
+	    			url: 			'/customers/',
+	    			type:			$('input[name="emailAddressA"]').is('[readonly]') ? 'PUT' : 'POST',
+	    			data:			JSON.stringify(json_obj),
+                    contentType:    'application/json; charset=utf-8',
+                    dataType:       'json',
+                    async:          true,
+                    cache:          false
+	    			
+	    		})
+	    		.done(function(data, textStatus, jqXHR) {
+	    			if (jqXHR.status != 200) {
+						console.warn("Submit Order warning:\n" + 
+										"\warning:\t" + textStatus)
+					}
+					cleanup(jqXHR.status != 200);
+	    		})
+	    		.fail(function(jqXHR, error, errorThrown) {
+					console.error("Submit Order error:\n" + 
+							"\terror:\t" + errorThrown)
+					cleanup(true);
+	    		})
+				.always(function() {
+				});
+	    		
+	    		return false;
+    		}
+    		catch (e) {
+	    		console.error("Submit Order exception:\n" +
+						"\texception:\t" + e.message);
+				cleanup(true);
+    		}
+    	}
+    	
+    	// searchClick
+    	// expects: email address field
+    	// returns: nothing
+    	function searchClick() {
+			// Disable button to prevent double click
+			$('input#search').prop('disabled', true);
+			// Get query parameters for search 
+    		var email_address = $('input[name="emailAddressS"]').val();
+			if ((email_address == '') || (isEmailAddress(email_address))) {
+				search(email_address);
+			} else {
+				alert("Not a vaild email address.");
+				$('#emailAddressS').focus();
+				$('input#search').prop('disabled', false);
+			}
+			return false;
+    	}
+    	// search
+    	// expects: email address
+    	// returns: updates customer table
+    	function search(email_address='') {
+			// Post processing cleanup
+    		// expects: error=true or false
+    		// returns: nothing
+			function cleanup(error=false) {
+    			// Enable button again
+	    		if ($('input#search').prop('disabled')) {
+					$('input#search').prop('disabled', false);
+	    		}
+	    		if (!error) {
+		    		// Clear search text
+					if (email_address != '') {
+    					$('input[name="emailAddressS"]').val('');
+					}
+   					$('#emailAddressS').focus();
+   				} else {
+    				// Noify user of error
+    				alert("Search encountererd an error!");
+    				if (email_address != '') {
+   						$('input#search').focus();
+    				} else {
+       					$('#emailAddressS').focus();
+    				}
+    			}
+	    		return false;
+			}
+    		try {
+	    		var params_obj = {};
+    			if (email_address != '') {
+    	    		params_obj["emailAddress"] = email_address;
+    			}
+    			
+				$('#customerTable tbody').hide();
+				$('#searchFoundNothing').hide();
+				$('#searchInProgress').show();
+				
+				// Ajax w/promises
+				$.ajax({
+					url: 			'/customers/',
+					type:			'GET',
+					data:			params_obj,
+			        contentType:    '',
+			        dataType:       '',
+			        async:          true,
+			        cache:          false
+					
+				})
+				.done(function(data, textStatus, jqXHR) {
+					// Clear table and rebuild
+					$('#customerTable').find('tr:gt(0)').remove();
+					if (jqXHR.status == 200) {
+						var customers = $.parseJSON(data);
+						var row = 0
+						$.each(customers, function(i,v)
+						{
+							// console.log(i,v);
+							row += 1
+							var customerRow = $.parseHTML('<tr class="' + ((row%2) ? 'odd' : 'even') + '" id=' + v.emailAddress + '" name=' + v.emailAddress + '>' +
+	                        		'<td class="c1 breakword">' + v.emailAddress + '</td>' +
+	                                '<td class="c2 breakword">' + v.rewardsPoints + '</td>' +
+	                                '<td class="c3 breakword">' + v.rewardsTier + '</td>' +
+	                                '<td class="c4 breakword">' + v.rewardsTierName + '</td>' +
+	                                '<td class="c5 breakword">' + v.nextRewardsTier + '</td>' +
+	                                '<td class="c6 breakword">' + v.nextRewardsTierName + '</td>' +
+	                                '<td class="c7 breakword">' + parseInt(v.nextRewardsTierProgress * 100) + '%</td>' +
+	                                '<td class="c8">' +
+	                                    '<div>' +
+	                                        '<input type="radio" name="delete_' + v.emailAddress + '" title="Delete ' + v.emailAddress + '" value="">' +
+	                                    '</div>' +
+	                                '</td>' +
+	                           	' </tr>');
+	                    	$('#customerTable tbody').append(customerRow)
+	                    	// Attach to table row an update handler
+	                    	$('tr[name="' + v.emailAddress + '"]').children(".c1, .c2, .c3, .c4, .c5, .c6, .c7").bind('click', function() {
+	                    		// Put email address to be updated in readonly field
+	                    		$('#emailAddressA').val(v.emailAddress);
+	                			$('#emailAddressA').prop('readonly', true);
+	                    		// Show submit order cancel button
+	                			$('input#submitOrderCancel').fadeIn('fast');
+	        					// Hide delete customer and show add orders
+	        		    		deleteCancel();
+	                    		// Focus on confirm email address
+	                    		$('#orderTotalA').focus();
+	                			return false;  
+	                    	});
+	                    	// Attach to radio button a delete handler
+	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function(e) {
+	                    		// Put email address to be deleted in readonly field
+	                    		$('#emailAddressD').val(v.emailAddress);
+	                    		// Disable all radio buttons
+	                    		$("input[type=radio]").attr('disabled', true);
+	                    		// Hide add orders and show delete customer
+	                    		$('#addOrders').hide();
+	                    		$('#deleteCustomer').show();
+	                    		// Hide submit order update stuff
+	                    		submitOrderCancel();
+	                    		// Focus on confirm email address
+	                    		$('#emailAddressC').focus();
+	                			return false;  
+	                		});
+						});
+						$('#searchInProgress').hide();
+						if (row > 0) {
+							$('#customerTable tbody').fadeIn('fast');
+						} else {
+		    				if (email_address != '') {
+		    					$('#searchFoundNothing').text('Customer ' + email_address + ' Not Found')
+		    				} else {
+		    					$('#searchFoundNothing').text('Customer Rewards Database Is Empty')
+		    				}
+							$('#searchFoundNothing').fadeIn('fast');
+						}
+					} else {
+						$('#searchInProgress').hide();
+						$('#searchFoundNothing').fadeIn('fast');
+						console.warn("Search warning:\n" + 
+										"\warning:\t" + textStatus)
+					}
+					cleanup(jqXHR.status != 200);
+				})
+				.fail(function(jqXHR, error, errorThrown) {
+					console.error("Search error:\n" + 
+									"\terror:\t" + errorThrown)
+					cleanup(true);
+				})
+				.always(function() {
+				});
+				
+				return false;
+    		}
+    		catch (e) {
+	    		console.error("Search exception:\n" +
+	    						"\texception:\t" + e.message);
+	    		cleanup(true);
+    		}
+    	}
+    	
+    	// deleteCancel
+    	// expects: nothing
+    	// returns: nothing
+    	function deleteCancel() {
+    		// Enable button again - just in case
+    		if ($('input#deleteCustomer').prop('disabled')) {
+				$('input#deleteCustomer').prop('disabled', false);
+    		}
+    		// Enable all radio buttons
+    		$("input[type=radio]").attr('disabled', false);
+			// Get email for finding radio button 
+    		var email_address = $('input[name="emailAddressD"]').val();
+			// Turn off radio button for this user
+			$('input[name="delete_' + email_address + '"]').prop('checked', false);
+    		// Clear email addresses
+    		$('input[name="emailAddressD"]').val('');
+    		$('input[name="emailAddressC"]').val('');
+			// Hide delete customer and show add orders
+    		$('#deleteCustomer').hide();
+    		$('#addOrders').show();
+    		// Put focus on email address search
+			$('#emailAddressS').focus();
+			return false;
+    	}
+    	// deleteClick
+    	// expects: email address field
+    	// returns: updates customer table on success
+    	function deleteClick() {
+			// Post processing cleanup
+    		// expects: error=true or false
+    		// returns: nothing
+			function cleanup(error=false) {
+	    		// Enable button again
+	    		if ($('input#deleteCustomer').prop('disabled')) {
+    				$('input#deleteCustomer').prop('disabled', false);
+	    		}
+	    		if (!error) {
+		    		// Clear email addresses
+		    		$('input[name="emailAddressD"]').val('');
+		    		$('input[name="emailAddressC"]').val('');
+		    		// Enable all radio buttons
+		    		$("input[type=radio]").attr('disabled', false);
+					// Hide delete customer and show add orders
+		    		$('#deleteCustomer').hide();
+		    		$('#addOrders').show();
+		    		// Rebuild table
+   					search();
+   				} else {
+    				// Noify user of error
+    				alert("Delete customer encountererd an error!");
+   					$('input#deleteCustomer').focus();
+   				}
+	    		return false;
+			}
+			
+    		try {
+    			// Disable button to prevent double submit
+    			$('input#deleteCustomer').prop('disabled', true);
+    			// Get query string parameter for customer deletion
+    			var email_address = $('input[name="emailAddressD"]').val();
+    			var email_address_confirmation = $('input[name="emailAddressC"]').val();
+				if (email_address != email_address_confirmation) {
+					alert("Customer email address does not match.");
+					$('#emailAddressC').focus();
+					$('input#deleteCustomer').prop('disabled', false);
+					return false;
+				}
+
+	    		var params_obj = {};
+    			if (email_address != '') {
+    	    		params_obj["emailAddress"] = email_address;
+    			}
+				
+				// Ajax w/promises
+				$.ajax({
+					url: 			'/customers/?' + $.param(params_obj),
+					type:			'DELETE',
+					data:			{},
+			        contentType:    '',
+			        dataType:       '',
+			        async:          true,
+			        cache:          false
+					
+				})
+	    		.done(function(data, textStatus, jqXHR) {
+	    			if (jqXHR.status != 200) {
+						console.warn("Delete customer warning:\n" + 
+										"\warning:\t" + textStatus)
+					}
+					cleanup(jqXHR.status != 200);
+	    		})
+	    		.fail(function(jqXHR, error, errorThrown) {
+					console.error("Delete customer error:\n" + 
+							"\terror:\t" + errorThrown)
+					cleanup(true);
+	    		})
+				.always(function() {
+				});
+	    		
+	    		return false;
+    		}
+    		catch (e) {
+	    		console.error("Delete customer exception:\n" +
+						"\texception:\t" + e.message);
+				cleanup(true);
+    		}
+    	}
+	</script>
+	
+	<!-- Local javascript -->  
+	<script type=text/javascript>
+ 
+    </script>
+</head>
+<body>
+	<div id="welcome" class="box">
+    	<h1>Welcome to the Golf Tour</h1>
+	    <div>
+	        <h2>Tournaments</h2>
+	        <table class="fixedwidth" id="tournamentTable" border="0">
+	            <tbody>
+	            	<!-- Table created automatically by search() -->
+	            </tbody>
+	        </table>
+	    </div>
+	</div>
+    <div id="addOrders" class="box">
+        <h2>Add orders</h2>
+        <form>
+        	<div class="smaller-box text">
+	            <label for="emailAddressA">Enter email address: </label>
+	            <input type="text" id="emailAddressA" name="emailAddressA"/><br>
+	            <label for="orderTotalA">Enter order total: </label>
+	            <input type="text" id="orderTotalA" name="orderTotalA"/><br>
+	            <input class="button hidden" type="button" id="submitOrderCancel" name="submitOrderCancel"value="Cancel"/>
+	            <input class="button" type="button" id="submitOrder" name="submitOrder"value="Submit Order"/>
+            </div>
+        </form>
+    </div>
+    <div id="deleteCustomer" class="box hidden">
+        <h2>Delete customer</h2>
+        <form>
+        	<div class="smaller-box text">
+	            <label for="emailAddressD">Selected customer: </label>
+	            <input type="text" id="emailAddressD" name="emailAddressD" readonly/><br>
+	            <label for="emailAddressC">Confirm customer: </label>
+	            <input type="text" id="emailAddressC" name="emailAddressC"/><br>
+	            <input class="button" type="button" id="deleteCustomerCancel" name="deleteCustomerCancel"value="Cancel"/>
+	            <input class="button" type="button" id="deleteCustomer" name="deleteCustomer"value="Delete Customer"/>
+            </div>
+        </form>
+    </div>
+    <div id="userRewards" class="box">
+        <h2>User Rewards</h2>
+        <form>
+        	<div class="text">
+            	<label for="emailAddressS">Email address: </label>
+            	<input type="text" id="emailAddressS" name="emailAddressS"/>
+            	<input class="button" type="button" id="search" name="search" value="Search"/>
+            </div>
+        </form>
+        <table class="nospace fixedwidth" id="customerTable">
+            <thead>
+            <tr>
+                <th class="c1 breakword">Email Address</th>
+                <th class="c2 breakword">Reward Points</th>
+                <th class="c3 breakword">Reward Tier</th>
+                <th class="c4 breakword">Reward Tier Name</th>
+                <th class="c5 breakword">Next Reward Tier</th>
+                <th class="c6 breakword">Next Reward Tier Name</th>
+                <th class="c7 breakword">Next Reward Tier Progress</th>
+                <th class="c8 breakword">X</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr>
+                	<!-- Table created automatically by search() -->
+                </tr>
+            </tbody>
+        </table>
+        <p class="message center hidden" id="searchInProgress">Searching . . .</p>
+        <p class="message center hidden" id="searchFoundNothing">Customer Not Found</p>
+    </div>			
+    <script type=text/javascript>
+    	$(function() {
+    		// Attach to submitOrderCancel button
+    		$('input#submitOrderCancel').on('click', function() {
+    			submitOrderCancel();
+    			return false;
+    		});
+    		// Attach to submitOrder button
+    		$('input#submitOrder').on('click', function() {
+    			submitOrderClick();
+    			return false;
+    		});
+    		// Attach to search button
+    		$('input#search').on('click', function() {
+    			searchClick();
+    			return false;
+    		});
+    		// Attach to deleteCustomerCancel button
+    		$('input#deleteCustomerCancel').on('click', function() {
+    			deleteCancel();
+    			return false;
+    		});
+    		// Attach to deleteCustomer button
+    		$('input#deleteCustomer').on('click', function() {
+    			deleteClick();
+    			return false;
+    		});
+    		// Trigger submitOrder for enter
+    		$('#emailAddressA').keypress(function(e) {
+    			var key = e.which;
+    			if(key == 13) { // the enter key code
+    				$('input[name = submitOrder]').click();
+    				return false;  
+    			}
+    		});
+    		// Trigger submitOrder for enter
+    		$('#orderTotalA').keypress(function(e) {
+    			var key = e.which;
+    			if(key == 13) { // the enter key code
+    				$('input[name = submitOrder]').click();
+    				return false;  
+    			}
+    		});
+    		// Trigger deleteCustomer for enter
+    		$('#emailAddressC').keypress(function(e) {
+    			var key = e.which;
+    			if(key == 13) { // the enter key code
+    				$('input[name = deleteCustomer]').click();
+    				return false;  
+    			}
+    		});
+    		// Trigger search for enter
+    		$('#emailAddressS').keypress(function(e) {
+    			var key = e.which;
+    			if(key == 13) { // the enter key code
+    				$('input[name = search]').click();
+    				return false;  
+    			}
+    		});
+    		// Focus in search email address
+    		$('#emailAddressS').focus();
+    		// Rebuild table
+    		RenderTournaments();
+		});
+    	
+    	// RenderTour
+    	// expects: nothing
+    	// returns: updates tournament table
+    	function RenderTournaments() {
+    		try {
+				// Ajax w/promises
+				$.ajax({
+					url: 			'/golfer/v1/tournaments',
+					type:			'GET',
+					data:			'',
+			        contentType:    '',
+			        dataType:       '',
+			        async:          true,
+			        cache:          false
+					
+				})
+				.done(function(data, textStatus, jqXHR) {
+					// Clear table and rebuild
+					if (jqXHR.status == 200) {
+						$('#tournamentTable').find('tr:gt(0)').remove();
+						var tournamentRow = "";
+						var col = 0;
+						$.each(data, function(i,v)
+						{
+							// console.log(i,v);
+							col += 1;
+							if (col == 1) {
+								tournamentRow = "<tr>";
+							}
+							tournamentRow += '<td class="tour_' + col + '"><span class="floating-box" align="center">' + v.name + '</span></td>';
+							if (col == 3) {
+								tournamentRow += "</tr>";
+								$('#tournamentTable tbody').append(tournamentRow);
+								col = 0;
+							}
+
+	                    	
+	                    	// Attach to table row an update handler
+	                    	/*
+	                    	$('tr[name="' + v.emailAddress + '"]').children(".c1, .c2, .c3, .c4, .c5, .c6, .c7").bind('click', function() {
+	                    		// Put email address to be updated in readonly field
+	                    		$('#emailAddressA').val(v.emailAddress);
+	                			$('#emailAddressA').prop('readonly', true);
+	                    		// Show submit order cancel button
+	                			$('input#submitOrderCancel').fadeIn('fast');
+	        					// Hide delete customer and show add orders
+	        		    		deleteCancel();
+	                    		// Focus on confirm email address
+	                    		$('#orderTotalA').focus();
+	                			return false;  
+	                    	});
+	                    	// Attach to radio button a delete handler
+	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function(e) {
+	                    		// Put email address to be deleted in readonly field
+	                    		$('#emailAddressD').val(v.emailAddress);
+	                    		// Disable all radio buttons
+	                    		$("input[type=radio]").attr('disabled', true);
+	                    		// Hide add orders and show delete customer
+	                    		$('#addOrders').hide();
+	                    		$('#deleteCustomer').show();
+	                    		// Hide submit order update stuff
+	                    		submitOrderCancel();
+	                    		// Focus on confirm email address
+	                    		$('#emailAddressC').focus();
+	                			return false;  
+	                		});
+	                    	*/
+						});
+						/*
+						$('#searchInProgress').hide();
+						if (row > 0) {
+							$('#customerTable tbody').fadeIn('fast');
+						} else {
+		    				if (email_address != '') {
+		    					$('#searchFoundNothing').text('Customer ' + email_address + ' Not Found')
+		    				} else {
+		    					$('#searchFoundNothing').text('Customer Rewards Database Is Empty')
+		    				}
+							$('#searchFoundNothing').fadeIn('fast');
+						}
+						*/
+					} else {
+						$('#searchInProgress').hide();
+						$('#searchFoundNothing').fadeIn('fast');
+						console.warn("Search warning:\n" + 
+										"\warning:\t" + textStatus)
+					}
+					//cleanup(jqXHR.status != 200);
+				})
+				.fail(function(jqXHR, error, errorThrown) {
+					console.error("Search error:\n" + 
+									"\terror:\t" + errorThrown)
+					cleanup(true);
+				})
+				.always(function() {
+				});
+				
+				return false;
+    		}
+    		catch (e) {
+	    		console.error("Search exception:\n" +
+	    						"\texception:\t" + e.message);
+	    		cleanup(true);
+    		}
+    	}
+	</script>
+    
+</body>
+</html>
