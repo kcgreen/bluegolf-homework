@@ -1,5 +1,7 @@
 package com.example.demo.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -12,8 +14,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.example.demo.tournament.entity.Tournament;
 import com.example.demo.tournament.repository.TournamentRepository;
-
-import static org.junit.Assert.assertEquals;
 
 @DataJpaTest
 public class TournamentRepositoryTest {
