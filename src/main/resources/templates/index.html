@@ -16,6 +16,7 @@
 		h1 a        { text-decoration: none; }
 		h2          { font-weight: normal; font-size: 24px; }
 		.tagline    { color: #888; font-style: italic; margin: 0 0 20px 0; }
+		.banner     { width: 960px; margin: 30px auto; height: 20px;}
 		.box        { width: 960px; margin: 30px auto; padding: 20px;
 		              background: white; box-shadow: 0 1px 4px #BED1D4;
 		              border-radius: 2px; }
@@ -453,90 +454,75 @@
     </script>
 </head>
 <body>
+    <div id="banner" class="banner">
+        <form id="loginForm" class="hidden">
+        	<div class="text">
+            	<label for="loginUserName">User Name: </label>
+            	<input type="text" id="loginUserName" name="loginUserName"/>
+            	<input class="button" type="button" id="loginButton" name="loginButton" value="Login"/>
+            </div>
+        </form>
+        <form id="loginLinkForm">
+        	<div class="text">
+				<a id="loginLink" href="#">Login</a>
+			</div>
+		</form>
+		<form id="logoutLinkForm" class="hidden">
+			<div class="text">
+				<label id="firstName">Hello</label> | <a id="logoutLink" href="#">Logout</a>
+			</div>
+		</form>
+    </div>
 	<div id="welcome" class="box">
     	<h1>Welcome to the Golf Tour</h1>
 	    <div>
 	        <h2>Tournaments</h2>
 	        <table class="fixedwidth" id="tournamentTable" border="0">
 	            <tbody>
-	            	<!-- Table created automatically by search() -->
+	            	<!-- Table created automatically -->
 	            </tbody>
 	        </table>
 	    </div>
 	</div>
-    <div id="addOrders" class="box">
-        <h2>Add orders</h2>
-        <form>
-        	<div class="smaller-box text">
-	            <label for="emailAddressA">Enter email address: </label>
-	            <input type="text" id="emailAddressA" name="emailAddressA"/><br>
-	            <label for="orderTotalA">Enter order total: </label>
-	            <input type="text" id="orderTotalA" name="orderTotalA"/><br>
-	            <input class="button hidden" type="button" id="submitOrderCancel" name="submitOrderCancel"value="Cancel"/>
-	            <input class="button" type="button" id="submitOrder" name="submitOrder"value="Submit Order"/>
-            </div>
-        </form>
-    </div>
-    <div id="deleteCustomer" class="box hidden">
-        <h2>Delete customer</h2>
-        <form>
-        	<div class="smaller-box text">
-	            <label for="emailAddressD">Selected customer: </label>
-	            <input type="text" id="emailAddressD" name="emailAddressD" readonly/><br>
-	            <label for="emailAddressC">Confirm customer: </label>
-	            <input type="text" id="emailAddressC" name="emailAddressC"/><br>
-	            <input class="button" type="button" id="deleteCustomerCancel" name="deleteCustomerCancel"value="Cancel"/>
-	            <input class="button" type="button" id="deleteCustomer" name="deleteCustomer"value="Delete Customer"/>
-            </div>
-        </form>
-    </div>
-    <div id="userRewards" class="box">
-        <h2>User Rewards</h2>
-        <form>
-        	<div class="text">
-            	<label for="emailAddressS">Email address: </label>
-            	<input type="text" id="emailAddressS" name="emailAddressS"/>
-            	<input class="button" type="button" id="search" name="search" value="Search"/>
-            </div>
-        </form>
-        <table class="nospace fixedwidth" id="customerTable">
+    <div id="results" class="box">
+        <h2>Your Results</h2>
+        <table class="nospace fixedwidth" id="resultsTable">
             <thead>
             <tr>
-                <th class="c1 breakword">Email Address</th>
-                <th class="c2 breakword">Reward Points</th>
-                <th class="c3 breakword">Reward Tier</th>
-                <th class="c4 breakword">Reward Tier Name</th>
-                <th class="c5 breakword">Next Reward Tier</th>
-                <th class="c6 breakword">Next Reward Tier Name</th>
-                <th class="c7 breakword">Next Reward Tier Progress</th>
-                <th class="c8 breakword">X</th>
+                <th class="c1 breakword">Date</th>
+                <th class="c2 breakword">Name</th>
+                <th class="c3 breakword">Place</th>
+                <th class="c4 breakword">Stage</th>
+                <th class="c5 breakword">Result</th>
             </tr>
             </thead>
             <tbody>
                 <tr>
-                	<!-- Table created automatically by search() -->
+                	<!-- Table created automatically -->
                 </tr>
             </tbody>
         </table>
-        <p class="message center hidden" id="searchInProgress">Searching . . .</p>
-        <p class="message center hidden" id="searchFoundNothing">Customer Not Found</p>
     </div>			
     <script type=text/javascript>
     	$(function() {
-    		// Attach to submitOrderCancel button
-    		$('input#submitOrderCancel').on('click', function() {
-    			submitOrderCancel();
+    		// Attach to loginButton button
+    		$('input#loginButton').on('click', function() {
+    			DoLogin();
     			return false;
     		});
-    		// Attach to submitOrder button
-    		$('input#submitOrder').on('click', function() {
-    			submitOrderClick();
+    		// Attach to loginLink
+    		$('a#loginLink').on('click', function() {
+    			$('form#loginLinkForm').hide();
+    			$('form#logoutLinkForm').hide();
+    			$('form#loginForm').show();
+        		$('input#loginUserName').focus();
     			return false;
     		});
-    		// Attach to search button
-    		$('input#search').on('click', function() {
-    			searchClick();
-    			return false;
+    		// Attach to logoutLink
+    		$('a#logoutLink').on('click', function() {
+    			$('form#loginForm').hide();
+    			$('form#loginLinkForm').show();
+    			$('form#logoutLinkForm').hide();
     		});
     		// Attach to deleteCustomerCancel button
     		$('input#deleteCustomerCancel').on('click', function() {
@@ -580,11 +566,67 @@
     				return false;  
     			}
     		});
-    		// Focus in search email address
-    		$('#emailAddressS').focus();
     		// Rebuild table
     		RenderTournaments();
 		});
+    	
+    	var USERNAME = "";
+    	// DoLogin
+    	// expects: nothing
+    	// returns: updates page with user info
+    	function DoLogin() {
+    		try {
+    			// Get username from login form
+        		var username = $('input[name="loginUserName"]').val(); 
+    			// Username can't be blank
+        		if (username != '') {
+        			
+					// Ajax w/promises
+					$.ajax({
+						url: 			'/golfer/v1/golfer/' + username,
+						type:			'GET',
+						data:			'',
+				        contentType:    '',
+				        dataType:       '',
+				        async:          true,
+				        cache:          false
+						
+					})
+					.done(function(data, textStatus, jqXHR) {
+						// Clear and build summary box
+						if (jqXHR.status == 200) {
+							USERNAME = data.userName;
+							$('label#firstName').text('Hello, ' + data.firstName);
+			    			$('form#loginForm').hide();
+			    			$('form#loginLinkForm').hide();
+			    			$('form#logoutLinkForm').show();
+						} else {
+							console.error("DoLogin:\n" + 
+									"\tUnable to login at this time.")
+						}
+					})
+					.fail(function(jqXHR, error, errorThrown) {
+					    if (jqXHR.status == 404) {
+						    alert("User Name not found.")
+					    } else {
+							console.error("DoLogin:\n" + 
+											"\terror:\t" + errorThrown)
+					    }
+					})
+					.always(function() {
+					});
+					
+					return false;
+        		} else {
+        			alert("User Name can't be blank.")
+        		}
+    		}
+    		catch (e) {
+	    		console.error("DoLogin:\n" +
+	    						"\texception:\t" + e.message);
+	    		cleanup(true);
+    		}
+    	}
     	
     	// RenderTour
     	// expects: nothing
