@@ -37,7 +37,18 @@ Front end.  You can assume the golfer is logged in.  Design a single page websit
 - If the golfer is registered for an event but has not entered a result, show a prompt to enter a result (Qualified, Did not qualify).  Submitting the result should be done via a client side call which returns a list of event(s) the golfer is now eligible to register for.  Display the events to the golfer.
 - If the golfer is not registered for an event, show the list of events (if any) they are eligible to register for.
 
-`http://localhost:8080/`
+Go to `http://localhost:8080/` in a web browser.
+
+User Name | First Name | Last Name
+--- | --- | ---
+CHARLIE | Charlie | Brown
+SALLY | Sally | Brown
+PP1 | Peppermint | Patty
+PP2 | Pig | Pen
+LINUS | Linus | VanPelt
+LUCY | Lucy | VanPelt
+FRANKLIN | Franklin | X
+MARCY | Marcy | X
 
 ## Question 2
 

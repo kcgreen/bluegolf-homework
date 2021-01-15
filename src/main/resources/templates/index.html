@@ -191,7 +191,7 @@
 							$('label#firstName').text('Hello ' + data.firstName + ' ' + data.lastName);
 			    			$('form#loginForm').hide();
 			    			$('form#loginLinkForm').hide();
-			    			$('form#logoutLinkForm').show();
+			    			$('form#logoutLinkForm').fadeIn('fast');
 			    			$('input[name="loginUserName"]').val('');
 			    			// Rebuild tables
 			    			RenderTables();
@@ -237,7 +237,7 @@
     		try {
     			$('form#loginLinkForm').hide();
     			$('form#logoutLinkForm').hide();
-    			$('form#loginForm').show();
+    			$('form#loginForm').fadeIn('fast');
         		$('input#loginUserName').focus();
     		}
     		catch (e) {
@@ -253,7 +253,7 @@
     		try {
 				USERNAME = '';
     			$('form#loginForm').hide();
-    			$('form#loginLinkForm').show();
+    			$('form#loginLinkForm').fadeIn('fast');
     			$('form#logoutLinkForm').hide();
     			// Rebuild tables
     			RenderTables();
@@ -270,8 +270,8 @@
     	function RenderTables() {
     		try {
     			if (USERNAME != '') {
-    				$('#selection').show();
-    				$('#results').show();
+    				$('#selection').fadeIn('fast');
+    				$('#results').fadeIn('fast');
     			} else {
 
     				$('#selection').hide();
@@ -388,9 +388,9 @@
 							});
 							
 							if (row > 0) {
-								$('#resultsTable tbody').show();
+								$('#resultsTable tbody').fadeIn('fast');
 							} else {
-								$('#resultsNotFound').show();
+								$('#resultsNotFound').fadeIn('fast');
 							}
 							
 						} else {
