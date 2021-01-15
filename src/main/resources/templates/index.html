@@ -512,57 +512,19 @@
     		});
     		// Attach to loginLink
     		$('a#loginLink').on('click', function() {
-    			$('form#loginLinkForm').hide();
-    			$('form#logoutLinkForm').hide();
-    			$('form#loginForm').show();
-        		$('input#loginUserName').focus();
+    			DoBeforeLogin();
     			return false;
     		});
     		// Attach to logoutLink
     		$('a#logoutLink').on('click', function() {
-    			$('form#loginForm').hide();
-    			$('form#loginLinkForm').show();
-    			$('form#logoutLinkForm').hide();
-    		});
-    		// Attach to deleteCustomerCancel button
-    		$('input#deleteCustomerCancel').on('click', function() {
-    			deleteCancel();
+    			DoAfterLogout();
     			return false;
     		});
-    		// Attach to deleteCustomer button
-    		$('input#deleteCustomer').on('click', function() {
-    			deleteClick();
-    			return false;
-    		});
-    		// Trigger submitOrder for enter
-    		$('#emailAddressA').keypress(function(e) {
+    		// Trigger login for enter
+    		$('input#loginUserName').keypress(function(e) {
     			var key = e.which;
     			if(key == 13) { // the enter key code
-    				$('input[name = submitOrder]').click();
-    				return false;  
-    			}
-    		});
-    		// Trigger submitOrder for enter
-    		$('#orderTotalA').keypress(function(e) {
-    			var key = e.which;
-    			if(key == 13) { // the enter key code
-    				$('input[name = submitOrder]').click();
-    				return false;  
-    			}
-    		});
-    		// Trigger deleteCustomer for enter
-    		$('#emailAddressC').keypress(function(e) {
-    			var key = e.which;
-    			if(key == 13) { // the enter key code
-    				$('input[name = deleteCustomer]').click();
-    				return false;  
-    			}
-    		});
-    		// Trigger search for enter
-    		$('#emailAddressS').keypress(function(e) {
-    			var key = e.which;
-    			if(key == 13) { // the enter key code
-    				$('input[name = search]').click();
+    				$('input[name="loginButton"]').click();
     				return false;  
     			}
     		});
@@ -576,11 +538,12 @@
     	// returns: updates page with user info
     	function DoLogin() {
     		try {
+    			// Disable button to prevent double submit
+    			$('input#loginButton').prop('disabled', true);
     			// Get username from login form
-        		var username = $('input[name="loginUserName"]').val(); 
+        		var username = $('input[name="loginUserName"]').val().toUpperCase(); 
     			// Username can't be blank
         		if (username != '') {
-        			
 					// Ajax w/promises
 					$.ajax({
 						url: 			'/golfer/v1/golfer/' + username,
@@ -600,20 +563,25 @@
 			    			$('form#loginForm').hide();
 			    			$('form#loginLinkForm').hide();
 			    			$('form#logoutLinkForm').show();
+			    			$('input[name="loginUserName"]').val('');
 						} else {
-							console.error("DoLogin:\n" + 
-									"\tUnable to login at this time.")
+							console.warn("DoLogin warning:\n" + 
+									"\twarning:\tUnable to login at this time.")
 						}
 					})
 					.fail(function(jqXHR, error, errorThrown) {
 					    if (jqXHR.status == 404) {
 						    alert("User Name not found.")
 					    } else {
-							console.error("DoLogin:\n" + 
+							console.error("DoLogin error:\n" + 
 											"\terror:\t" + errorThrown)
 					    }
 					})
 					.always(function() {
+			    		// Enable button again
+			    		if ($('input#loginButton').prop('disabled')) {
+		    				$('input#loginButton').prop('disabled', false);
+			    		}
 					});
 					
 					return false;
@@ -622,9 +590,39 @@
         		}
     		}
     		catch (e) {
-	    		console.error("DoLogin:\n" +
+	    		console.error("DoLogin exception:\n" +
 	    						"\texception:\t" + e.message);
-	    		cleanup(true);
+    		}
+    	}
+    	
+    	// DoBeforeLogin
+    	// expects: nothing
+    	// returns: renders login form
+    	function DoBeforeLogin() {
+    		try {
+    			$('form#loginLinkForm').hide();
+    			$('form#logoutLinkForm').hide();
+    			$('form#loginForm').show();
+        		$('input#loginUserName').focus();
+    		}
+    		catch (e) {
+	    		console.error("DoBeforeLogin exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// DoAfterLogout
+    	// expects: nothing
+    	// returns: clean up after logout
+    	function DoAfterLogout() {
+    		try {
+    			$('form#loginForm').hide();
+    			$('form#loginLinkForm').show();
+    			$('form#logoutLinkForm').hide();
+    		}
+    		catch (e) {
+	    		console.error("DoAfterLogout exception:\n" +
+	    						"\texception:\t" + e.message);
     		}
     	}
     	
@@ -663,64 +661,17 @@
 								$('#tournamentTable tbody').append(tournamentRow);
 								col = 0;
 							}
-
-	                    	
-	                    	// Attach to table row an update handler
-	                    	/*
-	                    	$('tr[name="' + v.emailAddress + '"]').children(".c1, .c2, .c3, .c4, .c5, .c6, .c7").bind('click', function() {
-	                    		// Put email address to be updated in readonly field
-	                    		$('#emailAddressA').val(v.emailAddress);
-	                			$('#emailAddressA').prop('readonly', true);
-	                    		// Show submit order cancel button
-	                			$('input#submitOrderCancel').fadeIn('fast');
-	        					// Hide delete customer and show add orders
-	        		    		deleteCancel();
-	                    		// Focus on confirm email address
-	                    		$('#orderTotalA').focus();
-	                			return false;  
-	                    	});
-	                    	// Attach to radio button a delete handler
-	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function(e) {
-	                    		// Put email address to be deleted in readonly field
-	                    		$('#emailAddressD').val(v.emailAddress);
-	                    		// Disable all radio buttons
-	                    		$("input[type=radio]").attr('disabled', true);
-	                    		// Hide add orders and show delete customer
-	                    		$('#addOrders').hide();
-	                    		$('#deleteCustomer').show();
-	                    		// Hide submit order update stuff
-	                    		submitOrderCancel();
-	                    		// Focus on confirm email address
-	                    		$('#emailAddressC').focus();
-	                			return false;  
-	                		});
-	                    	*/
 						});
-						/*
-						$('#searchInProgress').hide();
-						if (row > 0) {
-							$('#customerTable tbody').fadeIn('fast');
-						} else {
-		    				if (email_address != '') {
-		    					$('#searchFoundNothing').text('Customer ' + email_address + ' Not Found')
-		    				} else {
-		    					$('#searchFoundNothing').text('Customer Rewards Database Is Empty')
-		    				}
-							$('#searchFoundNothing').fadeIn('fast');
-						}
-						*/
 					} else {
-						$('#searchInProgress').hide();
+						$('#RenderTournaments').hide();
 						$('#searchFoundNothing').fadeIn('fast');
-						console.warn("Search warning:\n" + 
-										"\warning:\t" + textStatus)
+						console.warn("RenderTournaments warning:\n" + 
+										"\twarning:\t" + textStatus)
 					}
-					//cleanup(jqXHR.status != 200);
 				})
 				.fail(function(jqXHR, error, errorThrown) {
-					console.error("Search error:\n" + 
+					console.error("RenderTournaments error:\n" + 
 									"\terror:\t" + errorThrown)
-					cleanup(true);
 				})
 				.always(function() {
 				});
@@ -728,9 +679,8 @@
 				return false;
     		}
     		catch (e) {
-	    		console.error("Search exception:\n" +
+	    		console.error("RenderTournaments exception:\n" +
 	    						"\texception:\t" + e.message);
-	    		cleanup(true);
     		}
     	}
 	</script>
