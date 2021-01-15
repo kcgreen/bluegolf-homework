@@ -1,5 +1,7 @@
 package com.example.demo.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -9,8 +11,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.example.demo.result.entity.Result;
 import com.example.demo.result.repository.ResultRepository;
-
-import static org.junit.Assert.assertEquals;
 
 @DataJpaTest
 public class ResultRepositoryTest {
