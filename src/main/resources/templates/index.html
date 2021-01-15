@@ -20,6 +20,8 @@
 		.box        { width: 960px; margin: 30px auto; padding: 20px;
 		              background: white; box-shadow: 0 1px 4px #BED1D4;
 		              border-radius: 2px; }
+		.long-box
+					{ width: auto; margin: 15px auto; padding: 10px;}
 		.smaller-box
 					{ width: 480px; margin: 15px auto; padding: 10px;}
 		.floating-box
@@ -44,9 +46,8 @@
 		table.fixedwidth 
 					{ table-layout: fixed; width: 100%;}
 		td          { padding: 2px; text-align: center; font-size: smaller; }
-		.c1			{ width: 25%; text-align: left; }
-		.c2			{ width: 8%; }
-		.c8			{ width: 3%; }
+		.c1			{ width: 10%; text-align: left; }
+		.c2 .c3		{ width: 30%; }
 		.odd th     { background-color: #EEE; }
 		.odd td     { background-color: #EEE; }
 		.breakword  { word-wrap: break-word; }
@@ -61,398 +62,8 @@
 		.valid      { }
 	</style>
 	
-    <!-- Local javascript -->  
-    <script type=text/javascript>
-    	// isEmailAddress(email_address)
-    	// expect: email address
-    	// return: true or false
-    	function isEmailAddress(email_address='') {
-    		return /[^@]+@[^@]+\.[^@]+/.test(String(email_address));
-    	}
-    	// isOrderTotal(order_total)
-    	// expect: order total
-    	// return: true or false
-    	function isOrderTotal(order_total='') {
-    		return /^-?[0-9]+\.?[0-9]{0,2}$/.test(String(order_total));
-    	}
-    	
-    	// submitOrderCancel
-    	// expects: nothing
-    	// returns: nothing
-    	function submitOrderCancel() {
-    		// Enable button again - just in case
-    		if ($('input#submitOrder').prop('disabled')) {
-				$('input#submitOrder').prop('disabled', false);
-    		}
-    		// Clear order text
-    		$('input[name="emailAddressA"]').val('');
-    		$('input[name="orderTotalA"]').val('');
-    		// Undo email address readonly field
-			$('#emailAddressA').prop('readonly', false);
-    		// Hide submit order cancel button
-			$('input#submitOrderCancel').hide();
-    		// Put focus on email address search
-			$('#emailAddressS').focus();
-			return false;
-    	}
-    	// submitOrderClick
-    	// expects: email address and order total fields
-    	// returns: updates customer table on success
-    	function submitOrderClick() {
-			// Post processing cleanup
-    		// expects: error=true or false
-    		// returns: nothing
-			function cleanup(error=false) {
-	    		// Enable button again
-	    		if ($('input#submitOrder').prop('disabled')) {
-    				$('input#submitOrder').prop('disabled', false);
-	    		}
-	    		if (!error) {
-		    		// Clear order text
-		    		$('input[name="emailAddressA"]').val('');
-		    		$('input[name="orderTotalA"]').val('');
-		    		// Undo email address readonly field
-					$('#emailAddressA').prop('readonly', false);
-		    		// Hide submit order cancel button
-					$('input#submitOrderCancel').hide();
-		    		// Rebuild table
-   					search();
-   				} else {
-    				// Noify user of error
-    				alert("Submit Order encountererd an error!");
-   					$('input#submitOrder').focus();
-   				}
-	    		return false;
-			}
-			
-    		try {
-    			// Disable button to prevent double submit
-    			$('input#submitOrder').prop('disabled', true);
-    			// Get JSON object for order submission
-    			var email_address = $('input[name="emailAddressA"]').val();
-				if (!isEmailAddress(email_address)) {
-					alert("Not a vaild email address.");
-					$('#emailAddressA').focus();
-					$('input#submitOrder').prop('disabled', false);
-					return false;
-				}
-    			var order_total = $('input[name="orderTotalA"]').val();
-				if (!isOrderTotal(order_total)) {
-					alert("Not a vaild order total.");
-					$('#orderTotalA').focus();
-					$('input#submitOrder').prop('disabled', false);
-					return false;
-				}
-	    		var json_obj = {};
-	    		json_obj["emailAddress"] = email_address;
-	    		json_obj["orderTotal"] = order_total;
-				
-				// Ajax w/promises
-	    		$.ajax({
-	    			url: 			'/customers/',
-	    			type:			$('input[name="emailAddressA"]').is('[readonly]') ? 'PUT' : 'POST',
-	    			data:			JSON.stringify(json_obj),
-                    contentType:    'application/json; charset=utf-8',
-                    dataType:       'json',
-                    async:          true,
-                    cache:          false
-	    			
-	    		})
-	    		.done(function(data, textStatus, jqXHR) {
-	    			if (jqXHR.status != 200) {
-						console.warn("Submit Order warning:\n" + 
-										"\warning:\t" + textStatus)
-					}
-					cleanup(jqXHR.status != 200);
-	    		})
-	    		.fail(function(jqXHR, error, errorThrown) {
-					console.error("Submit Order error:\n" + 
-							"\terror:\t" + errorThrown)
-					cleanup(true);
-	    		})
-				.always(function() {
-				});
-	    		
-	    		return false;
-    		}
-    		catch (e) {
-	    		console.error("Submit Order exception:\n" +
-						"\texception:\t" + e.message);
-				cleanup(true);
-    		}
-    	}
-    	
-    	// searchClick
-    	// expects: email address field
-    	// returns: nothing
-    	function searchClick() {
-			// Disable button to prevent double click
-			$('input#search').prop('disabled', true);
-			// Get query parameters for search 
-    		var email_address = $('input[name="emailAddressS"]').val();
-			if ((email_address == '') || (isEmailAddress(email_address))) {
-				search(email_address);
-			} else {
-				alert("Not a vaild email address.");
-				$('#emailAddressS').focus();
-				$('input#search').prop('disabled', false);
-			}
-			return false;
-    	}
-    	// search
-    	// expects: email address
-    	// returns: updates customer table
-    	function search(email_address='') {
-			// Post processing cleanup
-    		// expects: error=true or false
-    		// returns: nothing
-			function cleanup(error=false) {
-    			// Enable button again
-	    		if ($('input#search').prop('disabled')) {
-					$('input#search').prop('disabled', false);
-	    		}
-	    		if (!error) {
-		    		// Clear search text
-					if (email_address != '') {
-    					$('input[name="emailAddressS"]').val('');
-					}
-   					$('#emailAddressS').focus();
-   				} else {
-    				// Noify user of error
-    				alert("Search encountererd an error!");
-    				if (email_address != '') {
-   						$('input#search').focus();
-    				} else {
-       					$('#emailAddressS').focus();
-    				}
-    			}
-	    		return false;
-			}
-    		try {
-	    		var params_obj = {};
-    			if (email_address != '') {
-    	    		params_obj["emailAddress"] = email_address;
-    			}
-    			
-				$('#customerTable tbody').hide();
-				$('#searchFoundNothing').hide();
-				$('#searchInProgress').show();
-				
-				// Ajax w/promises
-				$.ajax({
-					url: 			'/customers/',
-					type:			'GET',
-					data:			params_obj,
-			        contentType:    '',
-			        dataType:       '',
-			        async:          true,
-			        cache:          false
-					
-				})
-				.done(function(data, textStatus, jqXHR) {
-					// Clear table and rebuild
-					$('#customerTable').find('tr:gt(0)').remove();
-					if (jqXHR.status == 200) {
-						var customers = $.parseJSON(data);
-						var row = 0
-						$.each(customers, function(i,v)
-						{
-							// console.log(i,v);
-							row += 1
-							var customerRow = $.parseHTML('<tr class="' + ((row%2) ? 'odd' : 'even') + '" id=' + v.emailAddress + '" name=' + v.emailAddress + '>' +
-	                        		'<td class="c1 breakword">' + v.emailAddress + '</td>' +
-	                                '<td class="c2 breakword">' + v.rewardsPoints + '</td>' +
-	                                '<td class="c3 breakword">' + v.rewardsTier + '</td>' +
-	                                '<td class="c4 breakword">' + v.rewardsTierName + '</td>' +
-	                                '<td class="c5 breakword">' + v.nextRewardsTier + '</td>' +
-	                                '<td class="c6 breakword">' + v.nextRewardsTierName + '</td>' +
-	                                '<td class="c7 breakword">' + parseInt(v.nextRewardsTierProgress * 100) + '%</td>' +
-	                                '<td class="c8">' +
-	                                    '<div>' +
-	                                        '<input type="radio" name="delete_' + v.emailAddress + '" title="Delete ' + v.emailAddress + '" value="">' +
-	                                    '</div>' +
-	                                '</td>' +
-	                           	' </tr>');
-	                    	$('#customerTable tbody').append(customerRow)
-	                    	// Attach to table row an update handler
-	                    	$('tr[name="' + v.emailAddress + '"]').children(".c1, .c2, .c3, .c4, .c5, .c6, .c7").bind('click', function() {
-	                    		// Put email address to be updated in readonly field
-	                    		$('#emailAddressA').val(v.emailAddress);
-	                			$('#emailAddressA').prop('readonly', true);
-	                    		// Show submit order cancel button
-	                			$('input#submitOrderCancel').fadeIn('fast');
-	        					// Hide delete customer and show add orders
-	        		    		deleteCancel();
-	                    		// Focus on confirm email address
-	                    		$('#orderTotalA').focus();
-	                			return false;  
-	                    	});
-	                    	// Attach to radio button a delete handler
-	                    	$('input:radio[name="delete_' + v.emailAddress + '"]').change(function(e) {
-	                    		// Put email address to be deleted in readonly field
-	                    		$('#emailAddressD').val(v.emailAddress);
-	                    		// Disable all radio buttons
-	                    		$("input[type=radio]").attr('disabled', true);
-	                    		// Hide add orders and show delete customer
-	                    		$('#addOrders').hide();
-	                    		$('#deleteCustomer').show();
-	                    		// Hide submit order update stuff
-	                    		submitOrderCancel();
-	                    		// Focus on confirm email address
-	                    		$('#emailAddressC').focus();
-	                			return false;  
-	                		});
-						});
-						$('#searchInProgress').hide();
-						if (row > 0) {
-							$('#customerTable tbody').fadeIn('fast');
-						} else {
-		    				if (email_address != '') {
-		    					$('#searchFoundNothing').text('Customer ' + email_address + ' Not Found')
-		    				} else {
-		    					$('#searchFoundNothing').text('Customer Rewards Database Is Empty')
-		    				}
-							$('#searchFoundNothing').fadeIn('fast');
-						}
-					} else {
-						$('#searchInProgress').hide();
-						$('#searchFoundNothing').fadeIn('fast');
-						console.warn("Search warning:\n" + 
-										"\warning:\t" + textStatus)
-					}
-					cleanup(jqXHR.status != 200);
-				})
-				.fail(function(jqXHR, error, errorThrown) {
-					console.error("Search error:\n" + 
-									"\terror:\t" + errorThrown)
-					cleanup(true);
-				})
-				.always(function() {
-				});
-				
-				return false;
-    		}
-    		catch (e) {
-	    		console.error("Search exception:\n" +
-	    						"\texception:\t" + e.message);
-	    		cleanup(true);
-    		}
-    	}
-    	
-    	// deleteCancel
-    	// expects: nothing
-    	// returns: nothing
-    	function deleteCancel() {
-    		// Enable button again - just in case
-    		if ($('input#deleteCustomer').prop('disabled')) {
-				$('input#deleteCustomer').prop('disabled', false);
-    		}
-    		// Enable all radio buttons
-    		$("input[type=radio]").attr('disabled', false);
-			// Get email for finding radio button 
-    		var email_address = $('input[name="emailAddressD"]').val();
-			// Turn off radio button for this user
-			$('input[name="delete_' + email_address + '"]').prop('checked', false);
-    		// Clear email addresses
-    		$('input[name="emailAddressD"]').val('');
-    		$('input[name="emailAddressC"]').val('');
-			// Hide delete customer and show add orders
-    		$('#deleteCustomer').hide();
-    		$('#addOrders').show();
-    		// Put focus on email address search
-			$('#emailAddressS').focus();
-			return false;
-    	}
-    	// deleteClick
-    	// expects: email address field
-    	// returns: updates customer table on success
-    	function deleteClick() {
-			// Post processing cleanup
-    		// expects: error=true or false
-    		// returns: nothing
-			function cleanup(error=false) {
-	    		// Enable button again
-	    		if ($('input#deleteCustomer').prop('disabled')) {
-    				$('input#deleteCustomer').prop('disabled', false);
-	    		}
-	    		if (!error) {
-		    		// Clear email addresses
-		    		$('input[name="emailAddressD"]').val('');
-		    		$('input[name="emailAddressC"]').val('');
-		    		// Enable all radio buttons
-		    		$("input[type=radio]").attr('disabled', false);
-					// Hide delete customer and show add orders
-		    		$('#deleteCustomer').hide();
-		    		$('#addOrders').show();
-		    		// Rebuild table
-   					search();
-   				} else {
-    				// Noify user of error
-    				alert("Delete customer encountererd an error!");
-   					$('input#deleteCustomer').focus();
-   				}
-	    		return false;
-			}
-			
-    		try {
-    			// Disable button to prevent double submit
-    			$('input#deleteCustomer').prop('disabled', true);
-    			// Get query string parameter for customer deletion
-    			var email_address = $('input[name="emailAddressD"]').val();
-    			var email_address_confirmation = $('input[name="emailAddressC"]').val();
-				if (email_address != email_address_confirmation) {
-					alert("Customer email address does not match.");
-					$('#emailAddressC').focus();
-					$('input#deleteCustomer').prop('disabled', false);
-					return false;
-				}
-
-	    		var params_obj = {};
-    			if (email_address != '') {
-    	    		params_obj["emailAddress"] = email_address;
-    			}
-				
-				// Ajax w/promises
-				$.ajax({
-					url: 			'/customers/?' + $.param(params_obj),
-					type:			'DELETE',
-					data:			{},
-			        contentType:    '',
-			        dataType:       '',
-			        async:          true,
-			        cache:          false
-					
-				})
-	    		.done(function(data, textStatus, jqXHR) {
-	    			if (jqXHR.status != 200) {
-						console.warn("Delete customer warning:\n" + 
-										"\warning:\t" + textStatus)
-					}
-					cleanup(jqXHR.status != 200);
-	    		})
-	    		.fail(function(jqXHR, error, errorThrown) {
-					console.error("Delete customer error:\n" + 
-							"\terror:\t" + errorThrown)
-					cleanup(true);
-	    		})
-				.always(function() {
-				});
-	    		
-	    		return false;
-    		}
-    		catch (e) {
-	    		console.error("Delete customer exception:\n" +
-						"\texception:\t" + e.message);
-				cleanup(true);
-    		}
-    	}
-	</script>
-	
-	<!-- Local javascript -->  
-	<script type=text/javascript>
- 
-    </script>
 </head>
+
 <body>
     <div id="banner" class="banner">
         <form id="loginForm" class="hidden">
@@ -473,17 +84,30 @@
 			</div>
 		</form>
     </div>
+    
 	<div id="welcome" class="box">
     	<h1>Welcome to the Golf Tour</h1>
+	    <div id="selection" class="long-box">
+	    	<form id="tournamentForm">
+		    	<div class="text">
+		    		<label for="tournamentSelection">Tournament: </label>
+		    		<input type="text" id="tournamentSelection" name="tournamentSelection"/>&nbsp;
+		    		<label for="tournamentResult">Result: </label>
+		    		<input type="text" id="tournamentResult" name="tournamentResult"/>&nbsp;
+		    		<input class="button" type="button" id="tournamentButton" name="tournamentButton" value="Go"/>
+		    	</div>
+	    	</form>
+    	</div>
 	    <div>
 	        <h2>Tournaments</h2>
-	        <table class="fixedwidth" id="tournamentTable" border="0">
+	        <table class="fixedwidth" id="tournamentsTable" border="0">
 	            <tbody>
 	            	<!-- Table created automatically -->
 	            </tbody>
 	        </table>
 	    </div>
 	</div>
+	
     <div id="results" class="box">
         <h2>Your Results</h2>
         <table class="nospace fixedwidth" id="resultsTable">
@@ -502,7 +126,12 @@
                 </tr>
             </tbody>
         </table>
-    </div>			
+        <div id="resultsNotFound" class="message center">
+        	Please register for a tournament to get started.
+        </div>
+    </div>
+    
+	<!-- Local javascript -->  
     <script type=text/javascript>
     	$(function() {
     		// Attach to loginButton button
@@ -528,11 +157,11 @@
     				return false;  
     			}
     		});
-    		// Rebuild table
-    		RenderTournaments();
+    		// Build tables
+    		RenderTables();
 		});
     	
-    	var USERNAME = "";
+    	var USERNAME = '';
     	// DoLogin
     	// expects: nothing
     	// returns: updates page with user info
@@ -559,11 +188,13 @@
 						// Clear and build summary box
 						if (jqXHR.status == 200) {
 							USERNAME = data.userName;
-							$('label#firstName').text('Hello, ' + data.firstName);
+							$('label#firstName').text('Hello ' + data.firstName + ' ' + data.lastName);
 			    			$('form#loginForm').hide();
 			    			$('form#loginLinkForm').hide();
 			    			$('form#logoutLinkForm').show();
 			    			$('input[name="loginUserName"]').val('');
+			    			// Rebuild tables
+			    			RenderTables();
 						} else {
 							console.warn("DoLogin warning:\n" + 
 									"\twarning:\tUnable to login at this time.")
@@ -571,6 +202,8 @@
 					})
 					.fail(function(jqXHR, error, errorThrown) {
 					    if (jqXHR.status == 404) {
+							console.warn("DoLogin warning:\n" + 
+								"\twarning:\tUser Name not found.");
 						    alert("User Name not found.")
 					    } else {
 							console.error("DoLogin error:\n" + 
@@ -586,6 +219,8 @@
 					
 					return false;
         		} else {
+					console.warn("DoLogin warning:\n" + 
+						"\twarning:\tUser Name can't be blank.");
         			alert("User Name can't be blank.")
         		}
     		}
@@ -616,12 +251,39 @@
     	// returns: clean up after logout
     	function DoAfterLogout() {
     		try {
+				USERNAME = '';
     			$('form#loginForm').hide();
     			$('form#loginLinkForm').show();
     			$('form#logoutLinkForm').hide();
+    			// Rebuild tables
+    			RenderTables();
     		}
     		catch (e) {
 	    		console.error("DoAfterLogout exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// RenderTables
+    	// expects: nothing
+    	// returns: Builds tables
+    	function RenderTables() {
+    		try {
+    			if (USERNAME != '') {
+    				$('#selection').show();
+    				$('#results').show();
+    			} else {
+
+    				$('#selection').hide();
+    				$('#results').hide();
+    			}
+    			// Rebuild tournaments table
+    			RenderTournaments();
+    			// Rebuild results table
+    			RenderResults();
+    		}
+    		catch (e) {
+	    		console.error("RenderTables exception:\n" +
 	    						"\texception:\t" + e.message);
     		}
     	}
@@ -633,7 +295,7 @@
     		try {
 				// Ajax w/promises
 				$.ajax({
-					url: 			'/golfer/v1/tournaments',
+					url: 			'/golfer/v1/tournaments/' + USERNAME,
 					type:			'GET',
 					data:			'',
 			        contentType:    '',
@@ -645,7 +307,7 @@
 				.done(function(data, textStatus, jqXHR) {
 					// Clear table and rebuild
 					if (jqXHR.status == 200) {
-						$('#tournamentTable').find('tr:gt(0)').remove();
+						$('#tournamentsTable').find('tr').remove();
 						var tournamentRow = "";
 						var col = 0;
 						$.each(data, function(i,v)
@@ -655,18 +317,20 @@
 							if (col == 1) {
 								tournamentRow = "<tr>";
 							}
-							tournamentRow += '<td class="tour_' + col + '"><span class="floating-box" align="center">' + v.name + '</span></td>';
+							tournamentRow += '<td class="tour_' + col + '" id="tour_' + v.index + '""><span class="floating-box" align="center"><br/><br/>' + 
+									v.tourStage + '<br/>' + 
+									v.name + '</br>' + 
+									v.place + '</br>' + 
+									v.startDate + '</span></td>';
 							if (col == 3) {
 								tournamentRow += "</tr>";
-								$('#tournamentTable tbody').append(tournamentRow);
+								$('#tournamentsTable tbody').append(tournamentRow);
 								col = 0;
 							}
 						});
 					} else {
-						$('#RenderTournaments').hide();
-						$('#searchFoundNothing').fadeIn('fast');
 						console.warn("RenderTournaments warning:\n" + 
-										"\twarning:\t" + textStatus)
+								"\twarning:\tUnable to get tournaments at this time.")
 					}
 				})
 				.fail(function(jqXHR, error, errorThrown) {
@@ -680,6 +344,76 @@
     		}
     		catch (e) {
 	    		console.error("RenderTournaments exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// RenderResults
+    	// expects: nothing
+    	// returns: updates golfer results table
+    	function RenderResults() {
+    		try {
+    			if (USERNAME != '') {
+
+    				$('#resultsTable tbody').hide();
+    				$('#resultsNotFound').hide();
+    				
+					// Ajax w/promises
+					$.ajax({
+						url: 			'/golfer/v1/results/' + USERNAME,
+						type:			'GET',
+						data:			'',
+				        contentType:    '',
+				        dataType:       '',
+				        async:          true,
+				        cache:          false
+						
+					})
+					.done(function(data, textStatus, jqXHR) {
+						// Clear table and rebuild
+						if (jqXHR.status == 200) {
+							$('#resultsTable').find('tr:gt(0)').remove();var row = 0
+							$.each(data, function(i,v)
+							{
+								// console.log(i,v);
+								row += 1
+								var resultRow = '<tr class="' + ((row%2) ? 'odd' : 'even') + '" id="' + v.tourName + '" name="' + v.tourName + '">' +
+		                        		'<td class="c1 breakword">' + v.tourStartDate + '</td>' +
+		                                '<td class="c2 breakword">' + v.tourName + '</td>' +
+		                                '<td class="c3 breakword">' + v.tourPlace + '</td>' +
+		                                '<td class="c4 breakword">' + v.tourStage + '</td>' +
+		                                '<td class="c5 breakword">' + v.tourStatus + '</td>' +
+		                           	' </tr>';
+		                    	$('#resultsTable tbody').append(resultRow)
+							});
+							
+							if (row > 0) {
+								$('#resultsTable tbody').show();
+							} else {
+								$('#resultsNotFound').show();
+							}
+							
+						} else {
+							console.warn("RenderResults warning:\n" + 
+									"\twarning:\tUnable to get results at this time.")
+						}
+					})
+					.fail(function(jqXHR, error, errorThrown) {
+						console.error("RenderResults error:\n" + 
+										"\terror:\t" + errorThrown)
+					})
+					.always(function() {
+					});
+
+        		} else {
+        			// USERNAME is blank, just clear table
+					$('#resultsTable').find('tr:gt(0)').remove();var row = 0
+        		}
+				
+				return false;
+    		}
+    		catch (e) {
+	    		console.error("RenderResults exception:\n" +
 	    						"\texception:\t" + e.message);
     		}
     	}
