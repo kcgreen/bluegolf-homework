@@ -167,6 +167,11 @@
     				return false;  
     			}
     		});
+    		// Attach to tournamentSelection select
+    		$('select#tournamentSelection').change(function() {
+    			RenderChampionshipPath();
+    			return false;
+    		});
     		// Attach to tournamentButton button
     		$('input#tournamentButton').on('click', function() {
     			PostResult();
@@ -179,8 +184,11 @@
     	// Global refrence to golfer
     	var GOLFERCOOKIE = null;
     	
+    	// Global reference to tournaments
+    	var TOURARRAY = [];
+    	
     	// DoLogin
-    	// expects: nothing
+    	// expects: golfer in repository
     	// returns: updates page with user info
     	function DoLogin() {
     		try {
@@ -286,7 +294,7 @@
     	}
     	
     	// RenderTournaments
-    	// expects: nothing
+    	// expects: tournaments in repository
     	// returns: updates tournament table
     	function RenderTournaments() {
     		try {
@@ -341,10 +349,18 @@
 									var option = '<option value="' + v.index + '">' + v.startDate + ' | ' + v.name + ' at ' + v.place + '</option>';
 									$('#tournamentSelection').append(option);
 								}
+							// Build complete tournament array
+							} else {
+								TOURARRAY[v.index] = v.next;
 							}
 						});
-						// One more row
+						// One more row, complete the columns
 						if (col > 0) {
+							while (col < 3) {
+								col += 1;
+								tournamentRow += '<td></td>';
+							}
+							tournamentRow += "</tr>";
 							$('#tournamentsTable tbody').append(tournamentRow);
 						}
 						
@@ -360,6 +376,7 @@
 							
 							if ($('#tournamentSelection').children().length > 0 && $('#tournamentResult').children().length > 0) {
 			    				$('#selection').fadeIn('fast');
+			        			RenderChampionshipPath();
 			    			} else {
 			    				$('#selection').hide();
 							}
@@ -398,7 +415,7 @@
     	}
     	
     	// RenderResults
-    	// expects: nothing
+    	// expects: results in repository
     	// returns: updates golfer results table
     	function RenderResults() {
     		try {
@@ -575,6 +592,28 @@
     		}
     		catch (e) {
 	    		console.error("PostResult exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// RenderChampionshipPath
+    	// expects: golfer registered for tournament
+    	// returns: Builds tables
+    	function RenderChampionshipPath() {
+    		try {
+    			if (GOLFERCOOKIE) {
+    				$('#tournamentsTable').find('td').css({ 'border': '0px' });
+    				if ($('#tournamentSelection').children().length > 0 && $('#tournamentResult').children().length > 0) {
+   						var tournamentNext = $('#tournamentSelection').find(":selected").val();
+    					while (tournamentNext > 0) {
+	   						$('#tour_' + tournamentNext).css({ 'border': '1px solid red' });
+	   						tournamentNext = TOURARRAY[tournamentNext];
+    					}
+    				}
+    			}
+    		}
+    		catch (e) {
+	    		console.error("RenderChampionshipPath exception:\n" +
 	    						"\texception:\t" + e.message);
     		}
     	}
