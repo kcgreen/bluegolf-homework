@@ -105,7 +105,7 @@
 		    	</div>
 	    	</form>
     	</div>
-	    <div id="tournaments">
+	    <div id="tournaments" class="hidden">
 	        <h2>Tournaments</h2>
 	        <table class="fixedwidth" id="tournamentsTable" border="0">
 	            <tbody>
@@ -233,6 +233,8 @@
 					    } else {
 							console.error("DoLogin error:\n" + 
 											"\terror:\t" + errorThrown);
+							alert("Login is not working.");
+							DoAfterLogout();
 					    }
 					})
 					.always(function() {
@@ -298,7 +300,8 @@
     	// returns: updates tournament table
     	function RenderTournaments() {
     		try {
-    			
+
+				$('#tournaments').fadeIn('fast');
 				$('#tournamentsNotFound').hide();
 				
     			var url = '/golfer/v1/tournaments/';
@@ -396,11 +399,13 @@
 						console.warn("RenderTournaments warning:\n" + 
 							"\twarning:\tUser Name not found.");
 				    } else if (jqXHR.status == 400) {
-							console.warn("RenderTournaments warning:\n" + 
-								"\twarning:\tBad request.");
+						console.warn("RenderTournaments warning:\n" + 
+							"\twarning:\tBad request.");
 					} else {
 						console.error("RenderTournaments error:\n" + 
 										"\terror:\t" + errorThrown);
+						$('#tournamentsTable').find('tr').remove();
+						$('#tournamentsNotFound').fadeIn('fast');
 				    }
 				})
 				.always(function() {
@@ -568,12 +573,15 @@
 						    if (jqXHR.status == 404) {
 								console.warn("PostResult warning:\n" + 
 									"\twarning:\tUser Name not found.");
+							    alert("User Name not found.");
 					    	} else if (jqXHR.status == 400) {
 								console.warn("PostResult warning:\n" + 
 									"\twarning:\tBad request.");
+							    alert("Bad request.");
 						    } else {
 								console.error("PostResult error:\n" + 
 												"\terror:\t" + errorThrown);
+								alert("Tournament server is not working.");
 						    }
 						})
 						.always(function() {
