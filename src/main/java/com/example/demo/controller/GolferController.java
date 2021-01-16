@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -38,9 +40,6 @@ public class GolferController {
 	@Autowired
 	private TournamentRepository tournamentRepository;
 	
-	@Resource(name = "golferRespnoseGenerator")
-	private GolferResponse golferResponse;
-	
 	// Get Golfer
 	@GetMapping("/golfer/{username}")
 	public GolferResponse getGolfer(@PathVariable String username) {
@@ -48,7 +47,7 @@ public class GolferController {
 		List<Golfer> golfers = (List<Golfer>) golferRepository.findByUserName(username);
 		// only one golfer with this username
 		if (golfers.size() == 1) {
-			List<Result> results = (List<Result>) resultRepository.findAllByGolferId(golfers.get(0).getId());
+			List<Result> results = (List<Result>) resultRepository.findAll();
 			List<Tournament> tournaments = (List<Tournament>) tournamentRepository.findAll();
 			// index of current result
 			int resultId = (int)golfers.get(0).getResultId();
@@ -83,6 +82,7 @@ public class GolferController {
 	@GetMapping("/results/{username}")
 	public List<ResultResponse> getGolferResults(@PathVariable String username) {
 		List<ResultResponse> resultResponse = new ArrayList<ResultResponse>();
+		Comparator<ResultResponse> compareByStartDate = (ResultResponse rr1, ResultResponse rr2) -> rr1.getTourStartDate().compareTo( rr2.getTourStartDate());
 		DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 		List<Golfer> golfers = (List<Golfer>) golferRepository.findByUserName(username);
 		// only one golfer with this username
@@ -100,6 +100,8 @@ public class GolferController {
 						tournaments.get(tourId - 1).getTourStage().toString(),
 						result.getTourStatus().toString()));
 			});
+			// Return results in reverse order so newest result is first
+			resultResponse.sort(compareByStartDate.reversed());
 			return resultResponse;
 		} else {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Golfer not found");
@@ -199,8 +201,9 @@ public class GolferController {
 								// get tour info for requested result
 								int tourNext = Integer.parseInt(tourindex);
 								// can only register for same stage, different tour
-								if (tournaments.get(tourId - 1).getTourStage().compareTo(tournaments.get(tourNext - 1).getTourStage())==0 &&
-										results.stream().filter(o -> ((Result)o).getTourId()==tourNext).toArray().length==0) {
+								if (tournaments.get(tourNext - 1).getTourStage().compareTo(tournaments.get(tourId - 1).getTourStage())==0 &&
+										results.stream().filter(o -> (((Result)o).getTourId()==tourNext &&
+																	  ((Result)o).getGolferId()==golfers.get(0).getId())).toArray().length==0) {
 									// save info for next result
 									Result resultNext = resultRepository.save(new Result(
 																					golfers.get(0).getId(),
@@ -293,7 +296,7 @@ public class GolferController {
 		List<Golfer> golfers = (List<Golfer>) golferRepository.findByUserName(username);
 		// only one golfer with this username
 		if (golfers.size() == 1) {
-			List<Result> results = (List<Result>) resultRepository.findAllByGolferId(golfers.get(0).getId());
+			List<Result> results = (List<Result>) resultRepository.findAll();
 			List<Tournament> tournaments = (List<Tournament>) tournamentRepository.findAllWithStartDateAfter(new Date());
 			// index of current result
 			int resultId = (int)golfers.get(0).getResultId();
@@ -302,8 +305,11 @@ public class GolferController {
 				// get tour info
 				int tourId = (int)results.get(resultId - 1).getTourId();
 				tournaments.forEach(tournament -> {
-					// get tour info for each future tour >= current stage
-					if (tournament.getTourStage().compareTo(tournaments.get(tourId - 1).getTourStage())>=0) {
+					// get tour info for each future tour >= current stage, and exclude tours where golfer didnotqualify
+					if (tournament.getTourStage().compareTo(tournaments.get(tourId - 1).getTourStage())>=0 &&
+							results.stream().filter(o -> (((Result)o).getTourId()==tournament.getId() &&
+							                              ((Result)o).getGolferId()==golfers.get(0).getId() &&
+									                      ((Result)o).getTourStatus()==Result.Status.DIDNOTQUALIFY)).toArray().length==0) {
 						tournamentResponse.add(new TournamentResponse(
 								Long.toString(tournament.getId()),
 								tournament.getName(),

@@ -25,14 +25,14 @@
 		.smaller-box
 					{ width: 480px; margin: 15px auto; padding: 10px;}
 		.floating-box
-					{ width: 280px; margin: 15px auto; padding: 10px;
+					{ width: 280px; margin: 7px; padding: 10px;
 					  float:left; box-shadow: 0 1px 4px #BED1D4;
 					  border-radius: 2px; height: 150px;}
 		.message    { padding: 3px 8px; color: #11557C;
 		              font-size: 0.9em; border-radius: 2px; }
 		.center		{ text-align: center; }
-		.left       { float: left; }
-		.right      { float: right; }
+		.left       { text-align: left; }
+		.right      { text-align: right; }
 		.top        { position: absolute; top: 0 }
 		.topright   { position: absolute; top: 0; right: 10px;}
 		.nomargin   { margin: 0px; }
@@ -46,14 +46,21 @@
 		table.fixedwidth 
 					{ table-layout: fixed; width: 100%;}
 		td          { padding: 2px; text-align: center; font-size: smaller; }
-		.c1			{ width: 10%; text-align: left; }
-		.c2 .c3		{ width: 30%; }
+		.c1			{ width: 15%; text-align: left; }
+		.c2			{ width: 25%; text-align: left; }
+		.c3			{ width: 25%; text-align: left; }
 		.odd th     { background-color: #EEE; }
 		.odd td     { background-color: #EEE; }
 		.breakword  { word-wrap: break-word; }
-		form .text	{ margin: 10px auto; text-align: right; }
-		.text label { padding: 0 10px 0 0; }
+		form .text	{ margin: 10px auto; }
+		.text label { padding: 0 5px 0 10px; }
 		.text input	{ width: 300px; vertical-align: middle; }
+		.text select
+					{ width: 300px; vertical-align: text-bottom; }
+		.text .long
+					{ width: 450px; }
+		.text .short
+					{ width: 150px; }
 		.text .button
 					{ width: 125px; }
 		.hidden     { display: none; }
@@ -67,19 +74,19 @@
 <body>
     <div id="banner" class="banner">
         <form id="loginForm" class="hidden">
-        	<div class="text">
+        	<div class="text right">
             	<label for="loginUserName">User Name: </label>
             	<input type="text" id="loginUserName" name="loginUserName"/>
             	<input class="button" type="button" id="loginButton" name="loginButton" value="Login"/>
             </div>
         </form>
         <form id="loginLinkForm">
-        	<div class="text">
+        	<div class="text right">
 				<a id="loginLink" href="#">Login</a>
 			</div>
 		</form>
 		<form id="logoutLinkForm" class="hidden">
-			<div class="text">
+			<div class="text right">
 				<label id="firstName">Hello</label> | <a id="logoutLink" href="#">Logout</a>
 			</div>
 		</form>
@@ -87,28 +94,31 @@
     
 	<div id="welcome" class="box">
     	<h1>Welcome to the Golf Tour</h1>
-	    <div id="selection" class="long-box">
+	    <div id="selection" class="long-box hidden">
 	    	<form id="tournamentForm">
-		    	<div class="text">
+		    	<div class="text left">
 		    		<label for="tournamentSelection">Tournament: </label>
-		    		<input type="text" id="tournamentSelection" name="tournamentSelection"/>&nbsp;
+		    		<select class="long" id="tournamentSelection" name="tournamentSelection"></select>&nbsp;
 		    		<label for="tournamentResult">Result: </label>
-		    		<input type="text" id="tournamentResult" name="tournamentResult"/>&nbsp;
+		    		<select class="short" id="tournamentResult" name="tournamentResult"></select>&nbsp;
 		    		<input class="button" type="button" id="tournamentButton" name="tournamentButton" value="Go"/>
 		    	</div>
 	    	</form>
     	</div>
-	    <div>
+	    <div id="tournaments">
 	        <h2>Tournaments</h2>
 	        <table class="fixedwidth" id="tournamentsTable" border="0">
 	            <tbody>
 	            	<!-- Table created automatically -->
 	            </tbody>
 	        </table>
+        <div id="tournamentsNotFound" class="message center hidden">
+        	Sorry, no more tournaments available.
+        </div>
 	    </div>
 	</div>
 	
-    <div id="results" class="box">
+    <div id="results" class="box hidden">
         <h2>Your Results</h2>
         <table class="nospace fixedwidth" id="resultsTable">
             <thead>
@@ -126,7 +136,7 @@
                 </tr>
             </tbody>
         </table>
-        <div id="resultsNotFound" class="message center">
+        <div id="resultsNotFound" class="message center hidden">
         	Please register for a tournament to get started.
         </div>
     </div>
@@ -157,22 +167,37 @@
     				return false;  
     			}
     		});
+    		// Attach to tournamentSelection select
+    		$('select#tournamentSelection').change(function() {
+    			RenderChampionshipPath();
+    			return false;
+    		});
+    		// Attach to tournamentButton button
+    		$('input#tournamentButton').on('click', function() {
+    			PostResult();
+    			return false;
+    		});
     		// Build tables
     		RenderTables();
 		});
     	
-    	var USERNAME = '';
+    	// Global refrence to golfer
+    	var GOLFERCOOKIE = null;
+    	
+    	// Global reference to tournaments
+    	var TOURARRAY = [];
+    	
     	// DoLogin
-    	// expects: nothing
+    	// expects: golfer in repository
     	// returns: updates page with user info
     	function DoLogin() {
     		try {
-    			// Disable button to prevent double submit
-    			$('input#loginButton').prop('disabled', true);
     			// Get username from login form
         		var username = $('input[name="loginUserName"]').val().toUpperCase(); 
     			// Username can't be blank
         		if (username != '') {
+        			// Disable button to prevent double submit
+        			$('input#loginButton').prop('disabled', true);
 					// Ajax w/promises
 					$.ajax({
 						url: 			'/golfer/v1/golfer/' + username,
@@ -187,7 +212,7 @@
 					.done(function(data, textStatus, jqXHR) {
 						// Clear and build summary box
 						if (jqXHR.status == 200) {
-							USERNAME = data.userName;
+							GOLFERCOOKIE = data;
 							$('label#firstName').text('Hello ' + data.firstName + ' ' + data.lastName);
 			    			$('form#loginForm').hide();
 			    			$('form#loginLinkForm').hide();
@@ -197,17 +222,17 @@
 			    			RenderTables();
 						} else {
 							console.warn("DoLogin warning:\n" + 
-									"\twarning:\tUnable to login at this time.")
+									"\twarning:\tUnable to login at this time.");
 						}
 					})
 					.fail(function(jqXHR, error, errorThrown) {
 					    if (jqXHR.status == 404) {
 							console.warn("DoLogin warning:\n" + 
 								"\twarning:\tUser Name not found.");
-						    alert("User Name not found.")
+						    alert("User Name not found.");
 					    } else {
 							console.error("DoLogin error:\n" + 
-											"\terror:\t" + errorThrown)
+											"\terror:\t" + errorThrown);
 					    }
 					})
 					.always(function() {
@@ -221,7 +246,7 @@
         		} else {
 					console.warn("DoLogin warning:\n" + 
 						"\twarning:\tUser Name can't be blank.");
-        			alert("User Name can't be blank.")
+        			alert("User Name can't be blank.");
         		}
     		}
     		catch (e) {
@@ -239,6 +264,8 @@
     			$('form#logoutLinkForm').hide();
     			$('form#loginForm').fadeIn('fast');
         		$('input#loginUserName').focus();
+        		
+        		return false;
     		}
     		catch (e) {
 	    		console.error("DoBeforeLogin exception:\n" +
@@ -251,12 +278,14 @@
     	// returns: clean up after logout
     	function DoAfterLogout() {
     		try {
-				USERNAME = '';
+				GOLFERCOOKIE = null;
     			$('form#loginForm').hide();
     			$('form#loginLinkForm').fadeIn('fast');
     			$('form#logoutLinkForm').hide();
     			// Rebuild tables
     			RenderTables();
+    			
+    			return false;
     		}
     		catch (e) {
 	    		console.error("DoAfterLogout exception:\n" +
@@ -264,38 +293,21 @@
     		}
     	}
     	
-    	// RenderTables
-    	// expects: nothing
-    	// returns: Builds tables
-    	function RenderTables() {
-    		try {
-    			if (USERNAME != '') {
-    				$('#selection').fadeIn('fast');
-    				$('#results').fadeIn('fast');
-    			} else {
-
-    				$('#selection').hide();
-    				$('#results').hide();
-    			}
-    			// Rebuild tournaments table
-    			RenderTournaments();
-    			// Rebuild results table
-    			RenderResults();
-    		}
-    		catch (e) {
-	    		console.error("RenderTables exception:\n" +
-	    						"\texception:\t" + e.message);
-    		}
-    	}
-    	
-    	// RenderTour
-    	// expects: nothing
+    	// RenderTournaments
+    	// expects: tournaments in repository
     	// returns: updates tournament table
     	function RenderTournaments() {
     		try {
+    			
+				$('#tournamentsNotFound').hide();
+				
+    			var url = '/golfer/v1/tournaments/';
+    			if (GOLFERCOOKIE) {
+    				url += GOLFERCOOKIE.userName;
+    			}
 				// Ajax w/promises
 				$.ajax({
-					url: 			'/golfer/v1/tournaments/' + USERNAME,
+					url: 			url,
 					type:			'GET',
 					data:			'',
 			        contentType:    '',
@@ -308,6 +320,8 @@
 					// Clear table and rebuild
 					if (jqXHR.status == 200) {
 						$('#tournamentsTable').find('tr').remove();
+						$('#tournamentSelection').find('option').remove();
+						$('#tournamentResult').find('option').remove();
 						var tournamentRow = "";
 						var col = 0;
 						$.each(data, function(i,v)
@@ -327,15 +341,67 @@
 								$('#tournamentsTable tbody').append(tournamentRow);
 								col = 0;
 							}
+							// Build torunament selection
+							if (GOLFERCOOKIE) {
+								if ((GOLFERCOOKIE.tourStatus == "" && v.tourStage == "LOCAL") || 
+										((GOLFERCOOKIE.tourStatus == "DIDNOTQUALIFY") && (GOLFERCOOKIE.tourStage == v.tourStage)) ||
+										((GOLFERCOOKIE.tourStatus == "REGISTERED") && (GOLFERCOOKIE.tourName == v.name))) {
+									var option = '<option value="' + v.index + '">' + v.startDate + ' | ' + v.name + ' at ' + v.place + '</option>';
+									$('#tournamentSelection').append(option);
+								}
+							// Build complete tournament array
+							} else {
+								TOURARRAY[v.index] = v.next;
+							}
 						});
+						// One more row, complete the columns
+						if (col > 0) {
+							while (col < 3) {
+								col += 1;
+								tournamentRow += '<td></td>';
+							}
+							tournamentRow += "</tr>";
+							$('#tournamentsTable tbody').append(tournamentRow);
+						}
+						
+						// Bulid tournament result
+						if (GOLFERCOOKIE) {
+							if (GOLFERCOOKIE.tourStatus == "" || GOLFERCOOKIE.tourStatus == "DIDNOTQUALIFY") {
+								var option = '<option value="REGISTERED">Register</option>';
+								$('#tournamentResult').append(option);
+							} else if (GOLFERCOOKIE.tourStatus == "REGISTERED") {
+								var option = '<option value="QUALIFIED">Qualified</option><option value="DIDNOTQUALIFY">Did Not Qualify</option>';
+								$('#tournamentResult').append(option);
+							}
+							
+							if ($('#tournamentSelection').children().length > 0 && $('#tournamentResult').children().length > 0) {
+			    				$('#selection').fadeIn('fast');
+			        			RenderChampionshipPath();
+			    			} else {
+			    				$('#selection').hide();
+							}
+						}
+						
+						if ($('#tournamentsTable tbody').children().length == 0) {
+							$('#tournamentsNotFound').fadeIn('fast');
+						}
+						
 					} else {
 						console.warn("RenderTournaments warning:\n" + 
-								"\twarning:\tUnable to get tournaments at this time.")
+								"\twarning:\tUnable to get tournaments at this time.");
 					}
 				})
 				.fail(function(jqXHR, error, errorThrown) {
-					console.error("RenderTournaments error:\n" + 
-									"\terror:\t" + errorThrown)
+				    if (jqXHR.status == 404) {
+						console.warn("RenderTournaments warning:\n" + 
+							"\twarning:\tUser Name not found.");
+				    } else if (jqXHR.status == 400) {
+							console.warn("RenderTournaments warning:\n" + 
+								"\twarning:\tBad request.");
+					} else {
+						console.error("RenderTournaments error:\n" + 
+										"\terror:\t" + errorThrown);
+				    }
 				})
 				.always(function() {
 				});
@@ -349,18 +415,18 @@
     	}
     	
     	// RenderResults
-    	// expects: nothing
+    	// expects: results in repository
     	// returns: updates golfer results table
     	function RenderResults() {
     		try {
-    			if (USERNAME != '') {
+    			if (GOLFERCOOKIE) {
 
     				$('#resultsTable tbody').hide();
     				$('#resultsNotFound').hide();
     				
 					// Ajax w/promises
 					$.ajax({
-						url: 			'/golfer/v1/results/' + USERNAME,
+						url: 			'/golfer/v1/results/' + GOLFERCOOKIE.userName,
 						type:			'GET',
 						data:			'',
 				        contentType:    '',
@@ -372,22 +438,31 @@
 					.done(function(data, textStatus, jqXHR) {
 						// Clear table and rebuild
 						if (jqXHR.status == 200) {
-							$('#resultsTable').find('tr:gt(0)').remove();var row = 0
+							$('#resultsTable').find('tr:gt(0)').remove();
+							var row = 0;
 							$.each(data, function(i,v)
 							{
 								// console.log(i,v);
-								row += 1
+								row += 1;
+								var tournamentStatus = '';
+								if (v.tourStatus == 'REGISTERED') {
+									tournamentStatus = 'Registered';
+								} else if (v.tourStatus == 'DIDNOTQUALIFY') {
+									tournamentStatus = 'Did Not Qualify';
+								} else if (v.tourStatus = 'QUALIFIED') {
+									tournamentStatus = 'Qualified';	
+								}
 								var resultRow = '<tr class="' + ((row%2) ? 'odd' : 'even') + '" id="' + v.tourName + '" name="' + v.tourName + '">' +
 		                        		'<td class="c1 breakword">' + v.tourStartDate + '</td>' +
 		                                '<td class="c2 breakword">' + v.tourName + '</td>' +
 		                                '<td class="c3 breakword">' + v.tourPlace + '</td>' +
 		                                '<td class="c4 breakword">' + v.tourStage + '</td>' +
-		                                '<td class="c5 breakword">' + v.tourStatus + '</td>' +
+		                                '<td class="c5 breakword">' + tournamentStatus + '</td>' +
 		                           	' </tr>';
-		                    	$('#resultsTable tbody').append(resultRow)
+		                    	$('#resultsTable tbody').append(resultRow);
 							});
 							
-							if (row > 0) {
+							if ($('#resultsTable tbody').children().length > 0) {
 								$('#resultsTable tbody').fadeIn('fast');
 							} else {
 								$('#resultsNotFound').fadeIn('fast');
@@ -395,25 +470,150 @@
 							
 						} else {
 							console.warn("RenderResults warning:\n" + 
-									"\twarning:\tUnable to get results at this time.")
+									"\twarning:\tUnable to get results at this time.");
 						}
 					})
 					.fail(function(jqXHR, error, errorThrown) {
-						console.error("RenderResults error:\n" + 
-										"\terror:\t" + errorThrown)
+					    if (jqXHR.status == 404) {
+							console.warn("RenderResults warning:\n" + 
+								"\twarning:\tUser Name not found.");
+				    	} else if (jqXHR.status == 400) {
+							console.warn("RenderResults warning:\n" + 
+								"\twarning:\tBad request.");
+					    } else {
+							console.error("RenderResults error:\n" + 
+											"\terror:\t" + errorThrown);
+					    }
 					})
 					.always(function() {
 					});
 
         		} else {
-        			// USERNAME is blank, just clear table
-					$('#resultsTable').find('tr:gt(0)').remove();var row = 0
+        			// GOLFERCOOKIE is null, just clear table
+					$('#resultsTable').find('tr:gt(0)').remove();
         		}
 				
 				return false;
     		}
     		catch (e) {
 	    		console.error("RenderResults exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// RenderTables
+    	// expects: nothing
+    	// returns: Builds tables
+    	function RenderTables() {
+    		try {
+    			if (GOLFERCOOKIE) {
+    				$('#selection').fadeIn('fast');
+    				$('#results').fadeIn('fast');
+    			} else {
+    				$('#selection').hide();
+    				$('#results').hide();
+    			}
+    			// Rebuild tournaments table
+    			RenderTournaments();
+    			// Rebuild results table
+    			RenderResults();
+    		}
+    		catch (e) {
+	    		console.error("RenderTables exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// PostResult
+    	// expects: tournament and results selection
+    	// returns: posts tournament result
+    	function PostResult() {
+    		try {
+    			if (GOLFERCOOKIE) {
+        			// Disable button to prevent double submit
+        			$('input#tournamentButton').prop('disabled', true);
+
+    				var tournamentIndex = $('#tournamentSelection').find(":selected").val();
+    				var tournamentResult = $('#tournamentResult').find(":selected").val();
+    				
+    				if (tournamentIndex && tournamentResult) {
+						// Ajax w/promises
+						$.ajax({
+							url: 			'/golfer/v1/result/' + GOLFERCOOKIE.userName + '?tourindex=' + tournamentIndex + '&tourresult=' + tournamentResult,
+							type:			'POST',
+							data:			'',
+					        contentType:    '',
+					        dataType:       '',
+					        async:          true,
+					        cache:          false
+							
+						})
+						.done(function(data, textStatus, jqXHR) {
+							// Clear and build summary box
+							if (jqXHR.status == 200) {
+								GOLFERCOOKIE = data;
+								$('label#firstName').text('Hello ' + data.firstName + ' ' + data.lastName);
+				    			$('form#loginForm').hide();
+				    			$('form#loginLinkForm').hide();
+				    			$('form#logoutLinkForm').fadeIn('fast');
+				    			$('input[name="loginUserName"]').val('');
+				    			// Rebuild tables
+				    			RenderTables();
+							} else {
+								console.warn("PostResult warning:\n" + 
+										"\twarning:\tUnable to post result at this time.");
+							}
+						})
+						.fail(function(jqXHR, error, errorThrown) {
+						    if (jqXHR.status == 404) {
+								console.warn("PostResult warning:\n" + 
+									"\twarning:\tUser Name not found.");
+					    	} else if (jqXHR.status == 400) {
+								console.warn("PostResult warning:\n" + 
+									"\twarning:\tBad request.");
+						    } else {
+								console.error("PostResult error:\n" + 
+												"\terror:\t" + errorThrown);
+						    }
+						})
+						.always(function() {
+				    		// Enable button again
+				    		if ($('input#tournamentButton').prop('disabled')) {
+			    				$('input#tournamentButton').prop('disabled', false);
+				    		}
+						});
+    				}
+        		} else {
+					console.warn("PostResult warning:\n" + 
+					"\twarning:\tUser Name can't be blank.");
+        		}
+				
+				return false;
+    		}
+    		catch (e) {
+	    		console.error("PostResult exception:\n" +
+	    						"\texception:\t" + e.message);
+    		}
+    	}
+    	
+    	// RenderChampionshipPath
+    	// expects: golfer registered for tournament
+    	// returns: Builds tables
+    	function RenderChampionshipPath() {
+    		try {
+    			if (GOLFERCOOKIE) {
+    				$('#tournamentsTable').find('td').css({ 'border': '0px' });
+    				if ($('#tournamentSelection').children().length > 0 && $('#tournamentResult').children().length > 0) {
+   						var tournamentNext = $('#tournamentSelection').find(":selected").val();
+    					while (tournamentNext > 0) {
+	   						$('#tour_' + tournamentNext).css({ 'border': '1px solid red' });
+	   						tournamentNext = TOURARRAY[tournamentNext];
+    					}
+    				}
+    			}
+    		}
+    		catch (e) {
+	    		console.error("RenderChampionshipPath exception:\n" +
 	    						"\texception:\t" + e.message);
     		}
     	}
