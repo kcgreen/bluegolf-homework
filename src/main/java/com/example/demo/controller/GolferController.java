@@ -3,20 +3,17 @@ package com.example.demo.controller;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-
-import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -110,7 +107,10 @@ public class GolferController {
 	
 	// Post New Result
 	@PostMapping("/result/{username}")
-	public GolferResponse postGolferResult(@PathVariable String username, @RequestParam String tourindex, @RequestParam String tourresult) {
+	public GolferResponse postGolferResult(@PathVariable String username, @RequestBody TournamentResultRequest tournamentResultRequest) {
+		// Fixed anti-pattern, moved request params to request body
+		int tourindex = tournamentResultRequest.getTournamentIndex();
+		String tourresult = tournamentResultRequest.getTournamentResult();
 		GolferResponse golferResponse = new GolferResponse();
 		List<Golfer> golfers = (List<Golfer>) golferRepository.findByUserName(username);
 		// one golfer with this username
@@ -124,7 +124,7 @@ public class GolferController {
 				// get tour info 
 				int tourId = (int)results.get(resultId - 1).getTourId();
 				// current tourindex same as current tour
-				if (Integer.parseInt(tourindex) == tourId) {
+				if (tourindex == tourId) {
 					
 					// current status registered can move to qualified or didnotqualify
 					if (results.get(resultId - 1).getTourStatus().compareTo(Result.Status.REGISTERED)==0) {					
@@ -197,9 +197,9 @@ public class GolferController {
 					if (results.get(resultId - 1).getTourStatus().compareTo(Result.Status.DIDNOTQUALIFY)==0) {
 						if (tourresult.toUpperCase().equals(Result.Status.REGISTERED.toString())) {
 							// valid tourindex
-							if (Integer.parseInt(tourindex) > 0 && Integer.parseInt(tourindex) < tournaments.size() + 1) {
+							if (tourindex > 0 && tourindex < tournaments.size() + 1) {
 								// get tour info for requested result
-								int tourNext = Integer.parseInt(tourindex);
+								int tourNext = tourindex;
 								// can only register for same stage, different tour
 								if (tournaments.get(tourNext - 1).getTourStage().compareTo(tournaments.get(tourId - 1).getTourStage())==0 &&
 										results.stream().filter(o -> (((Result)o).getTourId()==tourNext &&
@@ -245,9 +245,9 @@ public class GolferController {
 				// no current result can move to registered
 				if (tourresult.toUpperCase().equals(Result.Status.REGISTERED.toString())) {
 					// valid tourindex
-					if (Integer.parseInt(tourindex) > 0 && Integer.parseInt(tourindex) < tournaments.size() + 1) {
+					if (tourindex > 0 && tourindex < tournaments.size() + 1) {
 						// get tour info for requested result
-						int tourNext = Integer.parseInt(tourindex);
+						int tourNext = tourindex;
 						// can only register for local stage
 						if (tournaments.get(tourNext - 1).getTourStage().compareTo(Tournament.Stage.LOCAL)==0) {
 							// save info for next result

@@ -538,17 +538,18 @@
         			// Disable button to prevent double submit
         			$('input#tournamentButton').prop('disabled', true);
 
-    				var tournamentIndex = $('#tournamentSelection').find(":selected").val();
-    				var tournamentResult = $('#tournamentResult').find(":selected").val();
+    				var tournamentResultRequest = {};
+    				tournamentResultRequest['tournamentIndex'] = $('#tournamentSelection').find(":selected").val();
+    				tournamentResultRequest['tournamentResult'] = $('#tournamentResult').find(":selected").val();
     				
-    				if (tournamentIndex && tournamentResult) {
+    				if (tournamentResultRequest['tournamentIndex'] && tournamentResultRequest['tournamentResult']) {
 						// Ajax w/promises
 						$.ajax({
-							url: 			'/golfer/v1/result/' + GOLFERCOOKIE.userName + '?tourindex=' + tournamentIndex + '&tourresult=' + tournamentResult,
+							url: 			'/golfer/v1/result/' + GOLFERCOOKIE.userName,
 							type:			'POST',
-							data:			'',
-					        contentType:    '',
-					        dataType:       '',
+							data:			JSON.stringify(tournamentResultRequest),
+					        contentType:    'application/json;charset=UTF-8',
+					        dataType:       'json',
 					        async:          true,
 					        cache:          false
 							
