@@ -24,11 +24,11 @@ Server-side application handles requests and responses through J2EE Spring Boot 
 
 Run `./mvnw spring-boot:run` for a dev server.
 
-Action | Http Verb | Endpoint | Request Params (query string) | Response (JSON)
+Action | Http Verb | Endpoint | Request Body (JSON) | Response Body (JSON)
 --- | --- | --- | --- | --- |
 Get current tour info for {username} golfer. | GET | /golfer/v1/golfer/{username} | none | {"tourName" : "Local 1 Name", "lastName" : "Brown", "tourStatus" : "REGISTERED", "tourStage" : "LOCAL", "firstName" : "Sally", "userName" : "SALLY"}
 Get all tour results for {username} golfer. | GET | /golfer/v1/results/{username} | none | \[{"tourPlace" : "Local 1 Place", "tourStage" : "LOCAL", "tourStartDate" : "2021-02-04", "tourName" : "Local 1 Name", "tourStatus" : "QUALIFIED"}, ...\]
-Post current tour result for {username} golfer. | POST | /golfer/v1/result/{username} | tourindex=1 tourresult=QUALIFIED | {"tourStage" : "REGIONAL", "tourName" : "Regional 1 Name", "userName" : "SALLY", "tourStatus" : "REGISTERED", "lastName" : "Brown", "firstName" : "Sally"}
+Post current tour result for {username} golfer. | POST | /golfer/v1/result/{username} | {"tournamentIndex" : 1, "tournamentResult" : "QUALIFIED"} | {"tourStage" : "REGIONAL", "tourName" : "Regional 1 Name", "userName" : "SALLY", "tourStatus" : "REGISTERED", "lastName" : "Brown", "firstName" : "Sally"}
 Get eligible tournaments for {username} golfer. | GET | /golfer/v1/tournaments/{username} | none | \[{"name" : "Regional 1 Name", "next" : "13", "startDate" : "2021-02-13", "place" : "Regional 1 Place", "tourStage" : "REGIONAL", "index" : "9"}, ...\]
 Get all tournaments. | GET	 | /golfer/v1/tournaments | none | \[{ "index" : "1", "name" : "Local 1 Name", "tourStage" : "LOCAL", "startDate" : "2021-02-04", "place" : "Local 1 Place", "next" : "9"}, ...\]
 

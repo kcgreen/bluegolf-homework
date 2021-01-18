@@ -1,10 +1,8 @@
 package com.example.demo.test;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -13,6 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.example.demo.controller.TournamentResultRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -46,36 +49,82 @@ public class GolferControllerTest {
 	
 	@Test
 	public void testPostResultForGolfer() throws Exception {
-		this.mockMvc.perform(post("/golfer/v1/result/TOMMY?tourindex=4&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(404));
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter ow = mapper.writer().withDefaultPrettyPrinter();
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=4&tourresult=XYZ")).andDo(print()).andExpect(status().is(400));
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=0&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(400));
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=9&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(400));
+		TournamentResultRequest trr = new TournamentResultRequest();
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=4&tourresult=REGISTERED")).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/TOMMY").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(404));
+		
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("XYZ");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(0);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(9);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
+		
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
 
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=4&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=4&tourresult=DIDNOTQUALIFY")).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("DIDNOTQUALIFY");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=4&tourresult=XYZ")).andDo(print()).andExpect(status().is(400));
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=0&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(400));
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=9&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(400));
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=4&tourresult=REGISTERED")).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("XYZ");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(0);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(9);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(4);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=5&tourresult=REGISTERED")).andDo(print()).andExpect(status().isOk());
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=5&tourresult=QUALIFIED")).andDo(print()).andExpect(status().isOk());
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=11&tourresult=QUALIFIED")).andDo(print()).andExpect(status().isOk());
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=14&tourresult=DIDNOTQUALIFY")).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(5);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(5);
+		trr.setTournamentResult("QUALIFIED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(11);
+		trr.setTournamentResult("QUALIFIED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(14);
+		trr.setTournamentResult("DIDNOTQUALIFY");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
 
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=14&tourresult=DIDNOTQUALIFY")).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(14);
+		trr.setTournamentResult("DIDNOTQUALIFY");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=13&tourresult=REGISTERED")).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(13);
+		trr.setTournamentResult("REGISTERED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
 
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=15&tourresult=XYZ")).andDo(print()).andExpect(status().is(400));
+		trr.setTournamentIndex(15);
+		trr.setTournamentResult("XYZ");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().is(400));
 		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=13&tourresult=QUALIFIED")).andDo(print()).andExpect(status().isOk());		
-		this.mockMvc.perform(post("/golfer/v1/result/LINUS?tourindex=15&tourresult=QUALIFIED")).andDo(print()).andExpect(status().isOk());
+		trr.setTournamentIndex(13);
+		trr.setTournamentResult("QUALIFIED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());		
+		trr.setTournamentIndex(15);
+		trr.setTournamentResult("QUALIFIED");
+		this.mockMvc.perform(post("/golfer/v1/result/LINUS").contentType("application/json").characterEncoding("UTF-8").content(ow.writeValueAsString(trr))).andDo(print()).andExpect(status().isOk());
 	}
 	@Test
 	public void testGetGolferForGolfer2() throws Exception {
